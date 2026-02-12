@@ -96,15 +96,19 @@ def test_update_help_shows_options(cli_runner):
 
 
 def test_update_runs(cli_runner):
-    result = cli_runner.invoke(cli, ["update"])
+    """update passes dry_run=False to run_update."""
+    with patch("gds_idea_app_kit.update.run_update") as mock:
+        result = cli_runner.invoke(cli, ["update"])
     assert result.exit_code == 0
-    assert "Updating" in result.output
+    mock.assert_called_once_with(dry_run=False)
 
 
 def test_update_dry_run(cli_runner):
-    result = cli_runner.invoke(cli, ["update", "--dry-run"])
+    """update --dry-run passes dry_run=True to run_update."""
+    with patch("gds_idea_app_kit.update.run_update") as mock:
+        result = cli_runner.invoke(cli, ["update", "--dry-run"])
     assert result.exit_code == 0
-    assert "Dry run" in result.output
+    mock.assert_called_once_with(dry_run=True)
 
 
 # ---- smoke-test command ----
