@@ -1,8 +1,15 @@
 """Shared test fixtures."""
 
 import pytest
+from click.testing import CliRunner
 
 from gds_idea_app_kit.manifest import MANIFEST_KEY
+
+
+@pytest.fixture()
+def cli_runner():
+    """Click CLI test runner."""
+    return CliRunner()
 
 
 @pytest.fixture()
