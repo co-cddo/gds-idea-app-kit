@@ -35,7 +35,7 @@ dev-dependencies = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["src/gds_idea_app_kit/templates"]
+extend-exclude = ["src/gds_idea_app_kit/templates/**/*.template"]
 
 [tool.ruff.lint]
 select = [
