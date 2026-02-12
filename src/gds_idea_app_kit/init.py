@@ -214,17 +214,17 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     project_dir = Path.cwd() / repo_name
 
     if project_dir.exists():
-        click.echo(f"❌ Directory already exists: {project_dir}", err=True)
+        click.echo(f"Error: Directory already exists: {project_dir}", err=True)
         sys.exit(1)
 
-    click.echo(f"🚀 Scaffolding {framework} app: {app_name}")
-    click.echo(f"   Directory: {repo_name}/")
-    click.echo(f"   Python: {python_version}")
+    click.echo(f"Scaffolding {framework} app: {app_name}")
+    click.echo(f"  Directory: {repo_name}/")
+    click.echo(f"  Python: {python_version}")
     click.echo()
 
     # -- Create directory and run cdk init (must be first, needs empty dir) --
     project_dir.mkdir()
-    click.echo("📦 Running cdk init...")
+    click.echo("Running cdk init...")
     _run_command(
         ["cdk", "init", "app", "--language", "python", "--generate-only"],
         cwd=project_dir,
@@ -232,11 +232,11 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     )
 
     # -- Run uv init on top of cdk output --
-    click.echo("📦 Running uv init...")
+    click.echo("Running uv init...")
     _run_command(["uv", "init", "--no-workspace"], cwd=project_dir, project_dir=project_dir)
 
     # -- Clean up CDK artifacts we don't need --
-    click.echo("🧹 Cleaning up CDK artifacts...")
+    click.echo("Cleaning up CDK artifacts...")
     _delete_cdk_artifacts(project_dir)
 
     # -- Prepare template variables --
@@ -249,7 +249,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     templates = _get_templates_dir()
 
     # -- Copy app.py (CDK entry point) --
-    click.echo("📄 Copying template files...")
+    click.echo("Copying template files...")
     _copy_template(templates / "common" / "app.py", project_dir / "app.py")
 
     # -- Copy framework files into app_src/ --
@@ -298,7 +298,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         f.write(extra)
 
     # -- Install CDK dependencies --
-    click.echo("📦 Installing CDK dependencies...")
+    click.echo("Installing CDK dependencies...")
     _run_command(
         [
             "uv", "add",
@@ -311,7 +311,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     )
 
     # -- Install gds-idea-app-kit as dev dependency --
-    click.echo("📦 Installing gds-idea-app-kit as dev dependency...")
+    click.echo("Installing gds-idea-app-kit as dev dependency...")
     _run_command(
         [
             "uv", "add", "--dev",
@@ -322,7 +322,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     )
 
     # -- Write [tool.webapp] config for AppConfig.from_pyproject() --
-    click.echo("📝 Writing project configuration...")
+    click.echo("Writing project configuration...")
     _write_webapp_config(project_dir, app_name, framework)
 
     # -- Build and write manifest --
@@ -335,11 +335,11 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     write_manifest(project_dir, manifest)
 
     # -- Sync dependencies --
-    click.echo("📦 Syncing dependencies...")
+    click.echo("Syncing dependencies...")
     _run_command(["uv", "sync"], cwd=project_dir, project_dir=project_dir)
 
     # -- Initial git commit --
-    click.echo("📝 Creating initial commit...")
+    click.echo("Creating initial commit...")
     _run_command(["git", "add", "."], cwd=project_dir, project_dir=project_dir)
     _run_command(
         ["git", "commit", "-m", f"Initial scaffold ({framework}, Python {python_version})"],
@@ -349,7 +349,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
 
     # -- Print next steps --
     click.echo()
-    click.echo(f"✅ Project created: {repo_name}/")
+    click.echo(f"Project created: {repo_name}/")
     click.echo()
     click.echo("Next steps:")
     click.echo(f"  cd {repo_name}")
