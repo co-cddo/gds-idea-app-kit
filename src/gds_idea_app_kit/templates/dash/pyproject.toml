@@ -1,0 +1,27 @@
+[project]
+name = "{{app_name}}"
+version = "0.1.0"
+description = "Dash app with Cognito authentication"
+requires-python = ">={{python_version}}"
+dependencies = [
+    "cognito-auth[dash] @ git+https://github.com/co-cddo/gds-idea-app-auth.git",
+    "gunicorn>=21.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py{{python_version_nodot}}"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["{{app_name}}"]

@@ -1,0 +1,60 @@
+{
+  "name": "Web App Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/app",
+  // ========================================================================
+  // VS CODE CONFIGURATION - CUSTOMIZE AS NEEDED
+  // ========================================================================
+  // This file contains VS Code-specific settings:
+  // - Extensions and editor settings
+  // - Dev container features (git, gh CLI, etc.)
+  //
+  // For runtime configuration (env vars, ports, volumes),
+  // edit docker-compose.yml instead.
+  // ========================================================================
+  // Additional dev container features
+  // These are incompatible with our build method DO NOT add features.
+  // "features": {
+  // },
+  // VS Code customizations (ADD YOUR EXTENSIONS HERE)
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+        "ruff.configuration": "/app/pyproject.toml"
+      }
+    }
+  },
+  // Forward application port
+  "forwardPorts": [
+    8080
+  ],
+  "portsAttributes": {
+    "8080": {
+      "label": "Application",
+      "onAutoForward": "notify"
+    }
+  },
+  // Post-create command: sync dependencies
+  "postCreateCommand": "uv sync",
+  // Run as non-root user
+  "remoteUser": "vscode"
+}

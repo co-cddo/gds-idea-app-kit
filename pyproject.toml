@@ -17,6 +17,15 @@ dependencies = [
 [project.scripts]
 idea-app = "gds_idea_app_kit.cli:cli"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/gds_idea_app_kit"]
+
+[tool.hatch.build]
+include = [
+    "src/gds_idea_app_kit/**/*.py",
+    "src/gds_idea_app_kit/templates/**",
+]
+
 [tool.uv]
 dev-dependencies = [
     "pytest>=8.0",
@@ -26,6 +35,7 @@ dev-dependencies = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["src/gds_idea_app_kit/templates"]
 
 [tool.ruff.lint]
 select = [
