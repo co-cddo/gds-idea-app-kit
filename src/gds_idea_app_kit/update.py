@@ -1,8 +1,9 @@
 """Implementation of the update command.
 
-Compares tool-owned files against the manifest hashes to detect user
-modifications, then overwrites unchanged files with the latest templates.
-Modified files get a .new file written alongside for manual review.
+Compares gds-idea-app-kit managed files against the manifest hashes to detect
+local modifications, then overwrites unchanged files with the latest templates.
+Locally modified files get a .new file written alongside for manual review,
+unless --force is used to overwrite everything.
 """
 
 import sys
@@ -71,18 +72,19 @@ def _render_template(template_path: Path, template_vars: dict[str, str]) -> str:
     return _apply_template_vars(content, template_vars)
 
 
-def run_update(dry_run: bool) -> None:
-    """Update tool-owned files in an existing project.
+def run_update(dry_run: bool, force: bool = False) -> None:
+    """Update gds-idea-app-kit managed files in an existing project.
 
     Reads the manifest from pyproject.toml, compares file hashes to detect
-    user modifications, and overwrites unchanged files with the latest
+    local modifications, and overwrites unchanged files with the latest
     templates from the installed version of gds-idea-app-kit.
 
-    Modified files are not overwritten. Instead, the new version is written
-    alongside as a .new file for manual review.
+    Locally modified files are not overwritten unless --force is used. Instead,
+    the new version is written alongside as a .new file for manual review.
 
     Args:
         dry_run: If True, show what would change without applying.
+        force: If True, overwrite locally modified files without creating .new files.
     """
     project_dir = Path.cwd()
     pyproject_path = project_dir / "pyproject.toml"
@@ -112,8 +114,10 @@ def run_update(dry_run: bool) -> None:
 
     if dry_run:
         click.echo("Dry run: showing what would change...")
+    elif force:
+        click.echo("Updating gds-idea-app-kit managed files (force)...")
     else:
-        click.echo("Updating tool-owned files...")
+        click.echo("Updating gds-idea-app-kit managed files...")
     click.echo()
 
     # -- Prepare template variables --
@@ -130,7 +134,7 @@ def run_update(dry_run: bool) -> None:
     manifest_hashes = manifest.get("files", {})
 
     updated = []
-    modified = []
+    skipped = []
     created = []
 
     for template_src, dest_path in sorted(tracked.items()):
@@ -156,11 +160,17 @@ def run_update(dry_run: bool) -> None:
         manifest_hash = manifest_hashes.get(dest_path)
 
         if manifest_hash and current_hash != manifest_hash:
-            # User has modified this file -- write .new alongside for review
-            new_path = Path(f"{dest_full}.new")
-            if not dry_run:
-                new_path.write_text(new_content)
-            modified.append(dest_path)
+            if force:
+                # Force mode -- overwrite the file
+                if not dry_run:
+                    dest_full.write_text(new_content)
+                updated.append(dest_path)
+            else:
+                # Normal mode -- write .new alongside for review
+                new_path = Path(f"{dest_full}.new")
+                if not dry_run:
+                    new_path.write_text(new_content)
+                skipped.append(dest_path)
             continue
 
         # File is unchanged (or wasn't in the old manifest) -- overwrite
@@ -177,14 +187,14 @@ def run_update(dry_run: bool) -> None:
         for path in updated:
             click.echo(f"  Updated: {path}")
 
-    if modified:
+    if skipped:
         click.echo()
-        for path in modified:
-            click.echo(f"  Modified: {path}")
+        for path in skipped:
+            click.echo(f"  Skipped: {path} (locally modified)")
             click.echo(f"    New version written to: {path}.new")
             click.echo(f"    Review changes: diff {path} {path}.new")
 
-    if not created and not updated and not modified:
+    if not created and not updated and not skipped:
         click.echo("  Nothing to update.")
 
     # -- Update manifest --
@@ -201,11 +211,11 @@ def run_update(dry_run: bool) -> None:
         new_manifest["python_version"] = python_version
         write_manifest(project_dir, new_manifest)
 
-    if modified and not dry_run:
+    if skipped and not dry_run:
         click.echo()
-        count = len(modified)
+        count = len(skipped)
         click.echo(
-            f"{count} file(s) had local modifications. Review the .new files above,"
+            f"{count} file(s) were locally modified and skipped. Review the .new files above,"
         )
         click.echo("then rename or delete them when done.")
 

@@ -90,17 +90,19 @@ def test_init_missing_all_args(cli_runner):
 
 
 def test_update_help_shows_options(cli_runner):
+    """update --help shows --dry-run and --force options."""
     result = cli_runner.invoke(cli, ["update", "--help"])
     assert result.exit_code == 0
     assert "--dry-run" in result.output
+    assert "--force" in result.output
 
 
 def test_update_runs(cli_runner):
-    """update passes dry_run=False to run_update."""
+    """update passes dry_run=False and force=False to run_update."""
     with patch("gds_idea_app_kit.update.run_update") as mock:
         result = cli_runner.invoke(cli, ["update"])
     assert result.exit_code == 0
-    mock.assert_called_once_with(dry_run=False)
+    mock.assert_called_once_with(dry_run=False, force=False)
 
 
 def test_update_dry_run(cli_runner):
@@ -108,7 +110,15 @@ def test_update_dry_run(cli_runner):
     with patch("gds_idea_app_kit.update.run_update") as mock:
         result = cli_runner.invoke(cli, ["update", "--dry-run"])
     assert result.exit_code == 0
-    mock.assert_called_once_with(dry_run=True)
+    mock.assert_called_once_with(dry_run=True, force=False)
+
+
+def test_update_force(cli_runner):
+    """update --force passes force=True to run_update."""
+    with patch("gds_idea_app_kit.update.run_update") as mock:
+        result = cli_runner.invoke(cli, ["update", "--force"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with(dry_run=False, force=True)
 
 
 # ---- smoke-test command ----

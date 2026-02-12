@@ -30,11 +30,12 @@ def init(framework: str, app_name: str, python_version: str):
 
 @cli.command()
 @click.option("--dry-run", is_flag=True, help="Show what would change without applying.")
-def update(dry_run: bool):
+@click.option("--force", is_flag=True, help="Overwrite locally modified files.")
+def update(dry_run: bool, force: bool):
     """Update tool-owned files in an existing project."""
     from gds_idea_app_kit.update import run_update
 
-    run_update(dry_run=dry_run)
+    run_update(dry_run=dry_run, force=force)
 
 
 @cli.command("smoke-test")

@@ -164,12 +164,12 @@ def test_update_unchanged_files_get_overwritten(update_project, capsys):
 
     captured = capsys.readouterr()
     # All files match their manifest hashes, so all should be updated
-    # The key thing is no files show as modified
-    assert "Modified:" not in captured.out
+    # The key thing is no files show as skipped
+    assert "Skipped:" not in captured.out
 
 
 def test_update_modified_file_writes_new(update_project, capsys):
-    """Modified files get a .new file written alongside with review instructions."""
+    """Locally modified files get a .new file written alongside with review instructions."""
     # Modify one tracked file
     dockerfile = update_project / "app_src" / "Dockerfile"
     dockerfile.write_text("# User modified this file\n")
@@ -178,7 +178,7 @@ def test_update_modified_file_writes_new(update_project, capsys):
     run_update(dry_run=False)
 
     captured = capsys.readouterr()
-    assert "Modified: app_src/Dockerfile" in captured.out
+    assert "Skipped: app_src/Dockerfile (locally modified)" in captured.out
     assert "app_src/Dockerfile.new" in captured.out
     assert "diff app_src/Dockerfile app_src/Dockerfile.new" in captured.out
 
@@ -212,7 +212,7 @@ def test_update_modified_file_original_unchanged(update_project):
 
 
 def test_update_modified_summary_count(update_project, capsys):
-    """Summary line reports the count of modified files."""
+    """Summary line reports the count of locally modified files."""
     # Modify two tracked files
     dockerfile = update_project / "app_src" / "Dockerfile"
     dockerfile.write_text("# modified\n")
@@ -223,7 +223,7 @@ def test_update_modified_summary_count(update_project, capsys):
     run_update(dry_run=False)
 
     captured = capsys.readouterr()
-    assert "2 file(s) had local modifications" in captured.out
+    assert "2 file(s) were locally modified and skipped" in captured.out
 
 
 def test_update_missing_file_is_created(update_project, capsys):
@@ -274,4 +274,54 @@ def test_update_manifest_is_refreshed_after_changes(update_project):
 
     manifest = read_manifest(update_project)
     assert "app_src/Dockerfile" in manifest.get("files", {})
+    assert hash_file(dockerfile) == manifest["files"]["app_src/Dockerfile"]
+
+
+# ---- run_update --force ----
+
+
+def test_update_force_overwrites_modified_file(update_project, capsys):
+    """Force mode overwrites locally modified files instead of writing .new."""
+    dockerfile = update_project / "app_src" / "Dockerfile"
+    dockerfile.write_text("# User modified this file\n")
+
+    os.chdir(update_project)
+    run_update(dry_run=False, force=True)
+
+    captured = capsys.readouterr()
+    # Should show as updated, not skipped
+    assert "Updated: app_src/Dockerfile" in captured.out
+    assert "Skipped:" not in captured.out
+    # No .new file should be created
+    assert not (update_project / "app_src" / "Dockerfile.new").exists()
+    # Original should be overwritten with template content
+    assert "# User modified" not in dockerfile.read_text()
+    assert "FROM python:" in dockerfile.read_text()
+
+
+def test_update_force_no_new_files_created(update_project):
+    """Force mode never creates .new files."""
+    # Modify all tracked files
+    for dest_path in get_tracked_files("streamlit").values():
+        dest_full = update_project / dest_path
+        if dest_full.exists():
+            dest_full.write_text("# modified\n")
+
+    os.chdir(update_project)
+    run_update(dry_run=False, force=True)
+
+    # No .new files anywhere
+    new_files = list(update_project.rglob("*.new"))
+    assert new_files == []
+
+
+def test_update_force_updates_manifest(update_project):
+    """Force mode updates the manifest with new hashes after overwriting."""
+    dockerfile = update_project / "app_src" / "Dockerfile"
+    dockerfile.write_text("# User modified this file\n")
+
+    os.chdir(update_project)
+    run_update(dry_run=False, force=True)
+
+    manifest = read_manifest(update_project)
     assert hash_file(dockerfile) == manifest["files"]["app_src/Dockerfile"]
