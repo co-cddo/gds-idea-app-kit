@@ -1,5 +1,7 @@
 """Tests for the CLI interface."""
 
+from unittest.mock import patch
+
 import pytest
 
 from gds_idea_app_kit import DEFAULT_PYTHON_VERSION, __version__
@@ -9,12 +11,14 @@ from gds_idea_app_kit.cli import cli
 
 
 def test_version(cli_runner):
+    """--version prints the package version."""
     result = cli_runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
     assert __version__ in result.output
 
 
 def test_help_lists_all_commands(cli_runner):
+    """--help lists all four commands."""
     result = cli_runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
     assert "init" in result.output
@@ -27,6 +31,7 @@ def test_help_lists_all_commands(cli_runner):
 
 
 def test_init_help_shows_options(cli_runner):
+    """init --help shows framework choices and --python option."""
     result = cli_runner.invoke(cli, ["init", "--help"])
     assert result.exit_code == 0
     assert "streamlit" in result.output
@@ -38,22 +43,31 @@ def test_init_help_shows_options(cli_runner):
 
 @pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
 def test_init_valid_framework(cli_runner, framework):
-    result = cli_runner.invoke(cli, ["init", framework, "my-app"])
+    """init accepts valid framework and passes correct args to run_init."""
+    with patch("gds_idea_app_kit.init.run_init") as mock:
+        result = cli_runner.invoke(cli, ["init", framework, "my-app"])
     assert result.exit_code == 0
-    assert framework in result.output
-    assert "my-app" in result.output
+    mock.assert_called_once_with(
+        framework=framework, app_name="my-app", python_version=DEFAULT_PYTHON_VERSION
+    )
 
 
 def test_init_custom_python_version(cli_runner):
-    result = cli_runner.invoke(cli, ["init", "streamlit", "my-app", "--python", "3.12"])
+    """init --python passes the custom version to run_init."""
+    with patch("gds_idea_app_kit.init.run_init") as mock:
+        result = cli_runner.invoke(cli, ["init", "streamlit", "my-app", "--python", "3.12"])
     assert result.exit_code == 0
-    assert "3.12" in result.output
+    mock.assert_called_once_with(framework="streamlit", app_name="my-app", python_version="3.12")
 
 
 def test_init_default_python_version(cli_runner):
-    result = cli_runner.invoke(cli, ["init", "streamlit", "my-app"])
+    """init uses DEFAULT_PYTHON_VERSION when --python is not given."""
+    with patch("gds_idea_app_kit.init.run_init") as mock:
+        result = cli_runner.invoke(cli, ["init", "streamlit", "my-app"])
     assert result.exit_code == 0
-    assert DEFAULT_PYTHON_VERSION in result.output
+    mock.assert_called_once_with(
+        framework="streamlit", app_name="my-app", python_version=DEFAULT_PYTHON_VERSION
+    )
 
 
 def test_init_invalid_framework(cli_runner):
