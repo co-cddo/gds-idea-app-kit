@@ -233,7 +233,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
 
     # -- Run uv init on top of cdk output --
     click.echo("📦 Running uv init...")
-    _run_command(["uv", "init"], cwd=project_dir, project_dir=project_dir)
+    _run_command(["uv", "init", "--no-workspace"], cwd=project_dir, project_dir=project_dir)
 
     # -- Clean up CDK artifacts we don't need --
     click.echo("🧹 Cleaning up CDK artifacts...")
