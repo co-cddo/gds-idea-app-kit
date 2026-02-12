@@ -1,12 +1,11 @@
 import logging
 
-from fastapi import FastAPI, Request
 from cognito_auth.fastapi import FastAPIAuth
+from fastapi import FastAPI, Request
 
 # Configure logging - quiet noisy libraries
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # Quiet noisy third-party loggers
@@ -22,10 +21,12 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 auth = FastAPIAuth(app)
 
+
 # Health check endpoint for ECS/ALB (unprotected)
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
 
 # Main route - protected by app-wide auth middleware
 @app.get("/")
@@ -39,12 +40,10 @@ def index(request: Request):
         "access_claims": user.access_claims,
     }
 
+
 # Additional example route - also automatically protected
 @app.get("/api/user")
 def get_user(request: Request):
     user = auth.get_current_user(request)
 
-    return {
-        "email": user.email,
-        "groups": user.groups if hasattr(user, 'groups') else []
-    }
+    return {"email": user.email, "groups": user.groups if hasattr(user, "groups") else []}

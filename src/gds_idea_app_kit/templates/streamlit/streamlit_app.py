@@ -5,8 +5,7 @@ from cognito_auth.streamlit import StreamlitAuth
 
 # Configure logging - quiet noisy libraries
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # Quiet noisy third-party loggers
