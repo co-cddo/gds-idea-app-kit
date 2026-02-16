@@ -56,5 +56,5 @@
   // Post-create command: sync dependencies
   "postCreateCommand": "uv sync",
   // Run as non-root user
-  "remoteUser": "vscode"
+  "remoteUser": "appuser"
 }

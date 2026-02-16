@@ -10,7 +10,7 @@ FROM python:{{python_version}}-slim AS base
 
 WORKDIR /app
 
-ARG USERNAME=vscode
+ARG USERNAME=appuser
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
