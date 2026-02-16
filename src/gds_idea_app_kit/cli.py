@@ -62,3 +62,11 @@ def provide_role(use_profile: bool, duration: int):
     from gds_idea_app_kit.provide_role import run_provide_role
 
     run_provide_role(use_profile=use_profile, duration=duration)
+
+
+@cli.command()
+def migrate():
+    """Migrate an existing project from the old template to idea-app."""
+    from gds_idea_app_kit.migrate import run_migrate
+
+    run_migrate()

@@ -198,6 +198,24 @@ def test_provide_role_use_profile(cli_runner):
     mock.assert_called_once_with(use_profile=True, duration=3600)
 
 
+# ---- migrate command ----
+
+
+def test_migrate_help_shows_description(cli_runner):
+    """migrate --help shows the command description."""
+    result = cli_runner.invoke(cli, ["migrate", "--help"])
+    assert result.exit_code == 0
+    assert "Migrate" in result.output
+
+
+def test_migrate_runs(cli_runner):
+    """migrate calls run_migrate."""
+    with patch("gds_idea_app_kit.migrate.run_migrate") as mock:
+        result = cli_runner.invoke(cli, ["migrate"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with()
+
+
 # ---- unknown command ----
 
 
