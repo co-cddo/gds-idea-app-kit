@@ -167,27 +167,35 @@ def test_provide_role_help_shows_options(cli_runner):
 
 
 def test_provide_role_runs(cli_runner):
-    result = cli_runner.invoke(cli, ["provide-role"])
+    """provide-role passes use_profile=False and default duration to run_provide_role."""
+    with patch("gds_idea_app_kit.provide_role.run_provide_role") as mock:
+        result = cli_runner.invoke(cli, ["provide-role"])
     assert result.exit_code == 0
-    assert "Assuming role" in result.output
+    mock.assert_called_once_with(use_profile=False, duration=3600)
 
 
 def test_provide_role_default_duration(cli_runner):
-    result = cli_runner.invoke(cli, ["provide-role"])
+    """provide-role uses 3600 as default duration."""
+    with patch("gds_idea_app_kit.provide_role.run_provide_role") as mock:
+        result = cli_runner.invoke(cli, ["provide-role"])
     assert result.exit_code == 0
-    assert "duration=3600s" in result.output
+    assert mock.call_args == ((), {"use_profile": False, "duration": 3600})
 
 
 def test_provide_role_custom_duration(cli_runner):
-    result = cli_runner.invoke(cli, ["provide-role", "--duration", "7200"])
+    """provide-role --duration 7200 passes custom duration."""
+    with patch("gds_idea_app_kit.provide_role.run_provide_role") as mock:
+        result = cli_runner.invoke(cli, ["provide-role", "--duration", "7200"])
     assert result.exit_code == 0
-    assert "duration=7200s" in result.output
+    mock.assert_called_once_with(use_profile=False, duration=7200)
 
 
 def test_provide_role_use_profile(cli_runner):
-    result = cli_runner.invoke(cli, ["provide-role", "--use-profile"])
+    """provide-role --use-profile passes use_profile=True."""
+    with patch("gds_idea_app_kit.provide_role.run_provide_role") as mock:
+        result = cli_runner.invoke(cli, ["provide-role", "--use-profile"])
     assert result.exit_code == 0
-    assert "Using current AWS profile" in result.output
+    mock.assert_called_once_with(use_profile=True, duration=3600)
 
 
 # ---- unknown command ----
