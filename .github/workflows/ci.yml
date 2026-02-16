@@ -24,6 +24,9 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
 
@@ -31,7 +34,7 @@ jobs:
         with:
           version: "latest"
 
-      - run: uv sync
+      - run: uv sync --python ${{ matrix.python-version }}
 
       - name: Run unit tests
         run: uv run pytest -m "not integration" -v
