@@ -132,21 +132,27 @@ def test_smoke_test_help_shows_options(cli_runner):
 
 
 def test_smoke_test_runs(cli_runner):
-    result = cli_runner.invoke(cli, ["smoke-test"])
+    """smoke-test passes build_only=False and wait=False to run_smoke_test."""
+    with patch("gds_idea_app_kit.smoke_test.run_smoke_test") as mock:
+        result = cli_runner.invoke(cli, ["smoke-test"])
     assert result.exit_code == 0
-    assert "smoke test" in result.output
+    mock.assert_called_once_with(build_only=False, wait=False)
 
 
 def test_smoke_test_build_only(cli_runner):
-    result = cli_runner.invoke(cli, ["smoke-test", "--build-only"])
+    """smoke-test --build-only passes build_only=True."""
+    with patch("gds_idea_app_kit.smoke_test.run_smoke_test") as mock:
+        result = cli_runner.invoke(cli, ["smoke-test", "--build-only"])
     assert result.exit_code == 0
-    assert "build only" in result.output
+    mock.assert_called_once_with(build_only=True, wait=False)
 
 
 def test_smoke_test_wait(cli_runner):
-    result = cli_runner.invoke(cli, ["smoke-test", "--wait"])
+    """smoke-test --wait passes wait=True."""
+    with patch("gds_idea_app_kit.smoke_test.run_smoke_test") as mock:
+        result = cli_runner.invoke(cli, ["smoke-test", "--wait"])
     assert result.exit_code == 0
-    assert "waiting" in result.output
+    mock.assert_called_once_with(build_only=False, wait=True)
 
 
 # ---- provide-role command ----
