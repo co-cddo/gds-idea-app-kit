@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - run: uv sync
+
+      - name: Ruff check
+        run: uv run ruff check src/ tests/
+
+      - name: Ruff format check
+        run: uv run ruff format --check src/ tests/
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - run: uv sync --python ${{ matrix.python-version }}
+
+      - name: Run unit tests
+        run: uv run pytest -m "not integration" -v
+
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version has been bumped
+        run: |
+          PR_VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          LATEST_TAG=$(git tag --sort=-v:refname | head -1 | sed 's/^v//')
+
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No existing tags. Version $PR_VERSION will be the first release."
+            exit 0
+          fi
+
+          echo "PR version:     $PR_VERSION"
+          echo "Latest release: $LATEST_TAG"
+
+          if [ "$PR_VERSION" = "$LATEST_TAG" ]; then
+            echo ""
+            echo "Error: Version has not been bumped."
+            echo "Update the version in pyproject.toml before merging."
+            exit 1
+          fi
+
+          # Compare versions: PR version must be greater than latest tag
+          HIGHER=$(printf '%s\n%s' "$LATEST_TAG" "$PR_VERSION" | sort -V | tail -1)
+          if [ "$HIGHER" != "$PR_VERSION" ]; then
+            echo ""
+            echo "Error: PR version ($PR_VERSION) is not higher than latest release ($LATEST_TAG)."
+            exit 1
+          fi
+
+          echo "Version bump confirmed: $LATEST_TAG -> $PR_VERSION"

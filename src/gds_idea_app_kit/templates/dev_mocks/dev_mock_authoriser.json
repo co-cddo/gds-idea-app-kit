@@ -1,0 +1,5 @@
+{
+  "allowed_groups": ["gds-idea"],
+  "allowed_users": ["developer@example.com"],
+  "require_all": false
+}
