@@ -1,6 +1,8 @@
 """GDS IDEA App Kit - CLI tool for scaffolding and maintaining web apps on AWS."""
 
-__version__ = "0.1.0"
+from importlib.metadata import version
+
+__version__ = version("gds-idea-app-kit")
 
 # Default Python version for new projects. Update this when a new stable CPython is released.
 DEFAULT_PYTHON_VERSION = "3.13"

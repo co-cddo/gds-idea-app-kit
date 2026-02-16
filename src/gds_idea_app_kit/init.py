@@ -301,7 +301,8 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     click.echo("Installing CDK dependencies...")
     _run_command(
         [
-            "uv", "add",
+            "uv",
+            "add",
             "aws-cdk-lib",
             "constructs",
             "gds-idea-cdk-constructs @ git+ssh://git@github.com/co-cddo/gds-idea-cdk-constructs.git",
