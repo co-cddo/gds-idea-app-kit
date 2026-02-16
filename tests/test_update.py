@@ -1,6 +1,7 @@
 """Tests for the update command."""
 
 import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -13,7 +14,17 @@ from gds_idea_app_kit.manifest import (
     read_manifest,
     write_manifest,
 )
-from gds_idea_app_kit.update import _check_version, _parse_version, run_update
+from gds_idea_app_kit.update import (
+    Action,
+    FileUpdate,
+    _apply_updates,
+    _check_version,
+    _classify_file,
+    _parse_version,
+    _plan_updates,
+    _report_updates,
+    run_update,
+)
 
 # ---- fixtures ----
 
@@ -325,3 +336,335 @@ def test_update_force_updates_manifest(update_project):
 
     manifest = read_manifest(update_project)
     assert hash_file(dockerfile) == manifest["files"]["app_src/Dockerfile"]
+
+
+# ---- _classify_file ----
+
+
+def test_classify_missing_file_returns_create(tmp_path):
+    """A file that doesn't exist on disk is classified as CREATE."""
+    dest_full = tmp_path / "missing.txt"
+    action = _classify_file(dest_full, {}, "missing.txt", force=False)
+    assert action == Action.CREATE
+
+
+def test_classify_unchanged_file_returns_update(tmp_path):
+    """A file whose hash matches the manifest is classified as UPDATE."""
+    dest_full = tmp_path / "file.txt"
+    dest_full.write_text("original content")
+    file_hash = hash_file(dest_full)
+
+    action = _classify_file(dest_full, {"file.txt": file_hash}, "file.txt", force=False)
+    assert action == Action.UPDATE
+
+
+def test_classify_modified_file_returns_skip(tmp_path):
+    """A file whose hash differs from the manifest is classified as SKIP."""
+    dest_full = tmp_path / "file.txt"
+    dest_full.write_text("modified content")
+
+    action = _classify_file(dest_full, {"file.txt": "old-hash"}, "file.txt", force=False)
+    assert action == Action.SKIP
+
+
+def test_classify_modified_file_with_force_returns_force(tmp_path):
+    """A modified file with --force is classified as FORCE, not SKIP."""
+    dest_full = tmp_path / "file.txt"
+    dest_full.write_text("modified content")
+
+    action = _classify_file(dest_full, {"file.txt": "old-hash"}, "file.txt", force=True)
+    assert action == Action.FORCE
+
+
+def test_classify_file_not_in_manifest_returns_update(tmp_path):
+    """A file that exists but has no manifest entry is classified as UPDATE."""
+    dest_full = tmp_path / "file.txt"
+    dest_full.write_text("some content")
+
+    action = _classify_file(dest_full, {}, "file.txt", force=False)
+    assert action == Action.UPDATE
+
+
+# ---- _plan_updates ----
+
+
+@pytest.fixture()
+def plan_project(tmp_path):
+    """Create a minimal project with templates for plan testing.
+
+    Returns a dict with project_dir, templates_dir, tracked, template_vars,
+    and manifest_hashes for use in _plan_updates calls.
+    """
+    framework = "streamlit"
+    templates_dir = _get_templates_dir()
+    tracked = get_tracked_files(framework)
+    template_vars = {
+        "app_name": "test-app",
+        "python_version": "3.13",
+        "python_version_nodot": "313",
+    }
+
+    # Copy all tracked files into the project
+    for template_src, dest_path in tracked.items():
+        template_full = templates_dir / template_src
+        dest_full = tmp_path / dest_path
+        dest_full.parent.mkdir(parents=True, exist_ok=True)
+        content = template_full.read_text()
+        content = _apply_template_vars(content, template_vars)
+        dest_full.write_text(content)
+
+    # Build manifest hashes from the files we just wrote
+    manifest_hashes = {}
+    for _, dest_path in tracked.items():
+        dest_full = tmp_path / dest_path
+        if dest_full.exists():
+            manifest_hashes[dest_path] = hash_file(dest_full)
+
+    return {
+        "project_dir": tmp_path,
+        "tracked": tracked,
+        "templates_dir": templates_dir,
+        "template_vars": template_vars,
+        "manifest_hashes": manifest_hashes,
+    }
+
+
+def test_plan_all_unchanged_returns_all_update(plan_project):
+    """When all files match manifest hashes, every item is ACTION.UPDATE."""
+    plan = _plan_updates(**plan_project, force=False)
+
+    assert len(plan) > 0
+    assert all(item.action == Action.UPDATE for item in plan)
+
+
+def test_plan_missing_file_returns_create(plan_project):
+    """A file deleted from the project is planned as CREATE."""
+    dockerfile = plan_project["project_dir"] / "app_src" / "Dockerfile"
+    dockerfile.unlink()
+
+    plan = _plan_updates(**plan_project, force=False)
+
+    create_items = [item for item in plan if item.action == Action.CREATE]
+    assert any(item.dest_path == "app_src/Dockerfile" for item in create_items)
+
+
+def test_plan_modified_file_returns_skip(plan_project):
+    """A locally modified file is planned as SKIP."""
+    dockerfile = plan_project["project_dir"] / "app_src" / "Dockerfile"
+    dockerfile.write_text("# user modified\n")
+
+    plan = _plan_updates(**plan_project, force=False)
+
+    skipped = [item for item in plan if item.action == Action.SKIP]
+    assert any(item.dest_path == "app_src/Dockerfile" for item in skipped)
+
+
+def test_plan_modified_file_with_force_returns_force(plan_project):
+    """A locally modified file with force=True is planned as FORCE."""
+    dockerfile = plan_project["project_dir"] / "app_src" / "Dockerfile"
+    dockerfile.write_text("# user modified\n")
+
+    plan = _plan_updates(**plan_project, force=True)
+
+    forced = [item for item in plan if item.action == Action.FORCE]
+    assert any(item.dest_path == "app_src/Dockerfile" for item in forced)
+    # No SKIP items when force is used
+    assert not any(item.action == Action.SKIP for item in plan)
+
+
+def test_plan_contains_rendered_content(plan_project):
+    """Plan items contain the rendered template content with variables substituted."""
+    plan = _plan_updates(**plan_project, force=False)
+
+    dockerfile_item = next(item for item in plan if item.dest_path == "app_src/Dockerfile")
+    # Template variables should be substituted in the content
+    assert "{{app_name}}" not in dockerfile_item.new_content
+    assert "{{python_version}}" not in dockerfile_item.new_content
+
+
+def test_plan_skips_missing_templates(plan_project):
+    """Template files that don't exist in the package are silently excluded."""
+    # Add a fake entry to tracked that has no template file
+    plan_project["tracked"]["nonexistent/template.txt"] = "nonexistent/output.txt"
+
+    plan = _plan_updates(**plan_project, force=False)
+
+    assert not any(item.dest_path == "nonexistent/output.txt" for item in plan)
+
+
+def test_plan_items_have_correct_dest_full(plan_project):
+    """Each plan item has dest_full pointing to the absolute path in the project."""
+    plan = _plan_updates(**plan_project, force=False)
+
+    for item in plan:
+        expected = plan_project["project_dir"] / item.dest_path
+        assert item.dest_full == expected
+
+
+# ---- _apply_updates ----
+
+
+def test_apply_create_writes_file(tmp_path):
+    """CREATE action writes the file to disk."""
+    dest_full = tmp_path / "new_file.txt"
+    plan = [FileUpdate("new_file.txt", dest_full, "hello world", Action.CREATE)]
+
+    _apply_updates(plan)
+
+    assert dest_full.exists()
+    assert dest_full.read_text() == "hello world"
+
+
+def test_apply_create_makes_parent_dirs(tmp_path):
+    """CREATE action creates parent directories if needed."""
+    dest_full = tmp_path / "deep" / "nested" / "file.txt"
+    plan = [FileUpdate("deep/nested/file.txt", dest_full, "content", Action.CREATE)]
+
+    _apply_updates(plan)
+
+    assert dest_full.exists()
+    assert dest_full.read_text() == "content"
+
+
+def test_apply_update_overwrites_file(tmp_path):
+    """UPDATE action overwrites an existing file."""
+    dest_full = tmp_path / "file.txt"
+    dest_full.write_text("old content")
+    plan = [FileUpdate("file.txt", dest_full, "new content", Action.UPDATE)]
+
+    _apply_updates(plan)
+
+    assert dest_full.read_text() == "new content"
+
+
+def test_apply_force_overwrites_file(tmp_path):
+    """FORCE action overwrites an existing file."""
+    dest_full = tmp_path / "file.txt"
+    dest_full.write_text("user modified")
+    plan = [FileUpdate("file.txt", dest_full, "template content", Action.FORCE)]
+
+    _apply_updates(plan)
+
+    assert dest_full.read_text() == "template content"
+
+
+def test_apply_skip_writes_new_file(tmp_path):
+    """SKIP action writes a .new file alongside, leaving the original untouched."""
+    dest_full = tmp_path / "file.txt"
+    dest_full.write_text("user modified")
+    plan = [FileUpdate("file.txt", dest_full, "template content", Action.SKIP)]
+
+    _apply_updates(plan)
+
+    assert dest_full.read_text() == "user modified"
+    new_file = tmp_path / "file.txt.new"
+    assert new_file.exists()
+    assert new_file.read_text() == "template content"
+
+
+def test_apply_mixed_actions(tmp_path):
+    """Multiple actions in a single plan are all applied correctly."""
+    create_file = tmp_path / "created.txt"
+    update_file = tmp_path / "updated.txt"
+    update_file.write_text("old")
+    skip_file = tmp_path / "skipped.txt"
+    skip_file.write_text("user version")
+
+    plan = [
+        FileUpdate("created.txt", create_file, "new file", Action.CREATE),
+        FileUpdate("updated.txt", update_file, "new version", Action.UPDATE),
+        FileUpdate("skipped.txt", skip_file, "template version", Action.SKIP),
+    ]
+
+    _apply_updates(plan)
+
+    assert create_file.read_text() == "new file"
+    assert update_file.read_text() == "new version"
+    assert skip_file.read_text() == "user version"
+    assert (tmp_path / "skipped.txt.new").read_text() == "template version"
+
+
+# ---- _report_updates ----
+
+
+def test_report_created_files(capsys):
+    """Created files are reported with 'Created:' prefix."""
+    plan = [FileUpdate("app_src/Dockerfile", Path("/fake"), "", Action.CREATE)]
+
+    _report_updates(plan, dry_run=False)
+
+    captured = capsys.readouterr()
+    assert "Created: app_src/Dockerfile" in captured.out
+
+
+def test_report_updated_files(capsys):
+    """Updated files are reported with 'Updated:' prefix."""
+    plan = [FileUpdate("app_src/Dockerfile", Path("/fake"), "", Action.UPDATE)]
+
+    _report_updates(plan, dry_run=False)
+
+    captured = capsys.readouterr()
+    assert "Updated: app_src/Dockerfile" in captured.out
+
+
+def test_report_forced_files_show_as_updated(capsys):
+    """FORCE actions are reported as 'Updated:', not 'Forced:'."""
+    plan = [FileUpdate("app_src/Dockerfile", Path("/fake"), "", Action.FORCE)]
+
+    _report_updates(plan, dry_run=False)
+
+    captured = capsys.readouterr()
+    assert "Updated: app_src/Dockerfile" in captured.out
+
+
+def test_report_skipped_files_with_review_instructions(capsys):
+    """Skipped files show the path, .new path, and diff command."""
+    plan = [FileUpdate("app_src/Dockerfile", Path("/fake"), "", Action.SKIP)]
+
+    _report_updates(plan, dry_run=False)
+
+    captured = capsys.readouterr()
+    assert "Skipped: app_src/Dockerfile (locally modified)" in captured.out
+    assert "app_src/Dockerfile.new" in captured.out
+    assert "diff app_src/Dockerfile app_src/Dockerfile.new" in captured.out
+
+
+def test_report_skipped_summary_count(capsys):
+    """Summary reports the count of skipped files."""
+    plan = [
+        FileUpdate("file1.txt", Path("/fake1"), "", Action.SKIP),
+        FileUpdate("file2.txt", Path("/fake2"), "", Action.SKIP),
+    ]
+
+    _report_updates(plan, dry_run=False)
+
+    captured = capsys.readouterr()
+    assert "2 file(s) were locally modified and skipped" in captured.out
+
+
+def test_report_skipped_summary_not_shown_in_dry_run(capsys):
+    """Dry run does not show the 'locally modified and skipped' summary."""
+    plan = [FileUpdate("file.txt", Path("/fake"), "", Action.SKIP)]
+
+    _report_updates(plan, dry_run=True)
+
+    captured = capsys.readouterr()
+    assert "locally modified and skipped" not in captured.out
+
+
+def test_report_empty_plan(capsys):
+    """Empty plan reports 'Nothing to update.'."""
+    _report_updates([], dry_run=False)
+
+    captured = capsys.readouterr()
+    assert "Nothing to update." in captured.out
+
+
+def test_report_dry_run_footer(capsys):
+    """Dry run shows 'No changes made (dry run).' footer."""
+    plan = [FileUpdate("file.txt", Path("/fake"), "", Action.UPDATE)]
+
+    _report_updates(plan, dry_run=True)
+
+    captured = capsys.readouterr()
+    assert "No changes made (dry run)." in captured.out
