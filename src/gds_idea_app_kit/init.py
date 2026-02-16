@@ -310,17 +310,6 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         project_dir=project_dir,
     )
 
-    # -- Install gds-idea-app-kit as dev dependency --
-    click.echo("Installing gds-idea-app-kit as dev dependency...")
-    _run_command(
-        [
-            "uv", "add", "--dev",
-            "gds-idea-app-kit @ git+https://github.com/co-cddo/gds-idea-app-kit.git",
-        ],
-        cwd=project_dir,
-        project_dir=project_dir,
-    )
-
     # -- Write [tool.webapp] config for AppConfig.from_pyproject() --
     click.echo("Writing project configuration...")
     _write_webapp_config(project_dir, app_name, framework)
