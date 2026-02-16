@@ -24,10 +24,16 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 # Copy dependency files with correct ownership
 COPY --chown=$USERNAME:$USERNAME app_src/pyproject.toml ./
+COPY --chown=$USERNAME:$USERNAME app_src/uv.loc[k] ./
 
 # Install minimal base packages (needed by both dev and prod)
+# If your build fails with 'gcc not found' or similar compilation errors,
+# uncomment build-essential below to add C/C++ compilers:
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates git \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates \
+       git \
+       # build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Switch to non-root user for dependency installation
