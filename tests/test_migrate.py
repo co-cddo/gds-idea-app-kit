@@ -331,30 +331,9 @@ def test_migrate_runs_uv_sync(old_project):
 
         run_migrate()
 
-    mock_run.assert_called_once_with(["uv", "sync"], check=True, capture_output=True, text=True)
-
-
-def test_migrate_warns_on_uv_sync_failure(old_project, capsys):
-    """Migration warns but does not fail when 'uv sync' errors."""
-    os.chdir(old_project)
-
-    with (
-        patch("gds_idea_app_kit.migrate.click") as mock_click,
-        patch(
-            "gds_idea_app_kit.migrate.subprocess.run",
-            side_effect=subprocess.CalledProcessError(1, ["uv", "sync"], stderr="sync error"),
-        ),
-    ):
-        mock_click.confirm = lambda msg, **kwargs: msg.startswith("Continue")
-        mock_click.echo = click_echo_noop
-
-        # Should not raise — just warns
-        run_migrate()
-
-    # Migration should still complete (manifest written)
-    manifest = read_manifest(old_project)
-    assert manifest is not None
-    assert manifest["framework"] == "streamlit"
+    mock_run.assert_called_once_with(
+        ["uv", "sync"], cwd=old_project, check=True, capture_output=True, text=True
+    )
 
 
 # ---- helper ----

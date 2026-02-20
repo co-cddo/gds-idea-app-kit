@@ -203,15 +203,7 @@ def run_migrate() -> None:
     # Sync the environment so old entry points (smoke_test, configure, etc.)
     # installed via [project.scripts] are removed.
     click.echo("Syncing environment...")
-    try:
-        subprocess.run(["uv", "sync"], check=True, capture_output=True, text=True)
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        click.echo(
-            "Warning: 'uv sync' failed. Run it manually to clean up old entry points.",
-            err=True,
-        )
-        if hasattr(e, "stderr") and e.stderr:
-            click.echo(e.stderr, err=True)
+    subprocess.run(["uv", "sync"], cwd=project_dir, check=True, capture_output=True, text=True)
 
     click.echo("Migration complete.")
     click.echo()
