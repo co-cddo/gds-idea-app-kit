@@ -4,8 +4,23 @@ import click
 
 from gds_idea_app_kit import DEFAULT_PYTHON_VERSION, __version__
 
+# Allow underscores as aliases for hyphenated commands, so that both
+# ``idea-app smoke-test`` and ``idea-app smoke_test`` work.
+_ALIASES: dict[str, str] = {
+    "smoke_test": "smoke-test",
+    "provide_role": "provide-role",
+}
 
-@click.group()
+
+class AliasGroup(click.Group):
+    """Click group that silently resolves underscore command aliases."""
+
+    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        cmd_name = _ALIASES.get(cmd_name, cmd_name)
+        return super().get_command(ctx, cmd_name)
+
+
+@click.group(cls=AliasGroup)
 @click.version_option(version=__version__, prog_name="idea-app")
 def cli():
     """GDS IDEA App Kit - scaffold and maintain web apps on AWS."""

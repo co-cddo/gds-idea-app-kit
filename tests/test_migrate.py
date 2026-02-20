@@ -1,6 +1,7 @@
 """Tests for the migrate command."""
 
 import os
+import subprocess
 from unittest.mock import patch
 
 import pytest
@@ -239,9 +240,13 @@ def test_migrate_full_flow(old_project):
     os.chdir(old_project)
 
     # Simulate user confirming migration but declining update
-    with patch("gds_idea_app_kit.migrate.click") as mock_click:
+    with (
+        patch("gds_idea_app_kit.migrate.click") as mock_click,
+        patch("gds_idea_app_kit.migrate.subprocess.run") as mock_run,
+    ):
         mock_click.confirm = lambda msg, **kwargs: msg.startswith("Continue")
         mock_click.echo = click_echo_noop
+        mock_run.return_value = subprocess.CompletedProcess([], 0)
 
         run_migrate()
 
@@ -307,6 +312,28 @@ def test_migrate_aborts_on_decline(old_project):
 
     # No manifest should exist
     assert read_manifest(old_project) == {}
+
+
+# ---- uv sync ----
+
+
+def test_migrate_runs_uv_sync(old_project):
+    """Migration runs 'uv sync' to remove old entry points from the environment."""
+    os.chdir(old_project)
+
+    with (
+        patch("gds_idea_app_kit.migrate.click") as mock_click,
+        patch("gds_idea_app_kit.migrate.subprocess.run") as mock_run,
+    ):
+        mock_click.confirm = lambda msg, **kwargs: msg.startswith("Continue")
+        mock_click.echo = click_echo_noop
+        mock_run.return_value = subprocess.CompletedProcess([], 0)
+
+        run_migrate()
+
+    mock_run.assert_called_once_with(
+        ["uv", "sync"], cwd=old_project, check=True, capture_output=True, text=True
+    )
 
 
 # ---- helper ----

@@ -21,6 +21,8 @@ from pathlib import Path
 
 import click
 
+from gds_idea_app_kit.prerequisites import check_prerequisites
+
 COMPOSE_FILE = ".devcontainer/docker-compose.yml"
 SERVICE_NAME = "app"
 CONTAINER_PORT = 8080
@@ -174,6 +176,9 @@ def run_smoke_test(build_only: bool, wait: bool = False) -> None:
         wait: If True, keep the container running after health check until Enter.
     """
     project_dir = Path.cwd()
+
+    # -- Check docker compose is available --
+    check_prerequisites(only=["docker", "docker compose"])
 
     # -- Validate configuration --
     click.echo("Loading configuration...")

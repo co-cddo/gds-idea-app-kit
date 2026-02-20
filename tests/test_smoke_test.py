@@ -128,3 +128,25 @@ def test_cleanup_runs_on_failure(tmp_path):
     # Cleanup (down) should have been called despite the error
     down_calls = [c for c in compose_calls if c and c[0] == "down"]
     assert len(down_calls) == 1
+
+
+# ---- prerequisite check ----
+
+
+def test_smoke_test_checks_docker_prerequisites(tmp_path):
+    """run_smoke_test calls check_prerequisites for docker and docker compose."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('[project]\nname = "test"\n\n[tool.webapp]\nframework = "streamlit"\n')
+    compose_file = tmp_path / ".devcontainer" / "docker-compose.yml"
+    compose_file.parent.mkdir(parents=True)
+    compose_file.write_text("services:\n  app:\n")
+
+    os.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.smoke_test.check_prerequisites") as mock_prereqs,
+        patch("gds_idea_app_kit.smoke_test._compose"),
+    ):
+        run_smoke_test(build_only=True)
+
+    mock_prereqs.assert_called_once_with(only=["docker", "docker compose"])
