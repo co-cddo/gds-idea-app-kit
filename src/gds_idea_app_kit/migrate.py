@@ -11,6 +11,7 @@ Usage:
 
 import re
 import shutil
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -198,6 +199,19 @@ def run_migrate() -> None:
     if template_dir.is_dir():
         click.echo("Removing template/ directory...")
         _remove_template_dir(project_dir)
+
+    # Sync the environment so old entry points (smoke_test, configure, etc.)
+    # installed via [project.scripts] are removed.
+    click.echo("Syncing environment...")
+    try:
+        subprocess.run(["uv", "sync"], check=True, capture_output=True, text=True)
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        click.echo(
+            "Warning: 'uv sync' failed. Run it manually to clean up old entry points.",
+            err=True,
+        )
+        if hasattr(e, "stderr") and e.stderr:
+            click.echo(e.stderr, err=True)
 
     click.echo("Migration complete.")
     click.echo()
