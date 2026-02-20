@@ -222,3 +222,29 @@ def test_migrate_runs(cli_runner):
 def test_unknown_command(cli_runner):
     result = cli_runner.invoke(cli, ["nonexistent"])
     assert result.exit_code != 0
+
+
+# ---- underscore aliases ----
+
+
+def test_smoke_test_underscore_alias(cli_runner):
+    """smoke_test (underscore) works as an alias for smoke-test."""
+    with patch("gds_idea_app_kit.smoke_test.run_smoke_test") as mock:
+        result = cli_runner.invoke(cli, ["smoke_test"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with(build_only=False, wait=False)
+
+
+def test_provide_role_underscore_alias(cli_runner):
+    """provide_role (underscore) works as an alias for provide-role."""
+    with patch("gds_idea_app_kit.provide_role.run_provide_role") as mock:
+        result = cli_runner.invoke(cli, ["provide_role"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with(use_profile=False, duration=3600)
+
+
+def test_underscore_aliases_not_in_help(cli_runner):
+    """Underscore aliases do not appear in --help output."""
+    result = cli_runner.invoke(cli, ["--help"])
+    assert "smoke_test" not in result.output
+    assert "provide_role" not in result.output

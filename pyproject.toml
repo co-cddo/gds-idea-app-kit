@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 idea-app = "gds_idea_app_kit.cli:cli"
+idea_app = "gds_idea_app_kit.cli:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gds_idea_app_kit"]
