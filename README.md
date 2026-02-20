@@ -13,10 +13,12 @@ Generates projects with:
 Install with [Homebrew](https://brew.sh/):
 
 ```bash
-brew install uv node git docker aws-cdk
+brew install uv node git docker docker-compose colima aws-cdk
 ```
 
 You also need SSH access to the `co-cddo` GitHub organisation (for private CDK construct dependencies).
+
+`idea-app init` will check all prerequisites are installed before creating a project. If anything is missing, it will tell you what to install.
 
 ## Installation
 
@@ -173,6 +175,32 @@ Configure the role ARN in your project's `pyproject.toml`:
 aws_role_arn = "arn:aws:iam::123456789012:role/your-dev-role"
 aws_region = "eu-west-2"
 ```
+
+## Troubleshooting
+
+### `docker compose` not found / unknown shorthand flag `-f`
+
+If `docker compose version` fails or you see `unknown shorthand flag: 'f' in -f` when running `idea-app smoke-test`, the Docker Compose plugin is not registered with the Docker CLI.
+
+`brew install docker-compose` installs the binary but does not automatically register it as a Docker CLI plugin. You need to tell Docker where to find it.
+
+Add the following to `~/.docker/config.json` (create the file if it doesn't exist):
+
+```json
+{
+  "cliPluginsExtraDirs": [
+    "/opt/homebrew/lib/docker/cli-plugins"
+  ]
+}
+```
+
+Then verify:
+
+```bash
+docker compose version
+```
+
+This should print something like `Docker Compose version v2.x.x`.
 
 ## Development
 

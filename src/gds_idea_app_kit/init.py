@@ -20,6 +20,7 @@ from gds_idea_app_kit import (
     __version__,
 )
 from gds_idea_app_kit.manifest import build_manifest, write_manifest
+from gds_idea_app_kit.prerequisites import check_prerequisites
 
 
 def _sanitize_app_name(name: str) -> str:
@@ -216,6 +217,9 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     if project_dir.exists():
         click.echo(f"Error: Directory already exists: {project_dir}", err=True)
         sys.exit(1)
+
+    # -- Check prerequisites before creating anything --
+    check_prerequisites()
 
     click.echo(f"Scaffolding {framework} app: {app_name}")
     click.echo(f"  Directory: {repo_name}/")
