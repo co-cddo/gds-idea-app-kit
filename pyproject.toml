@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gds-idea-app-kit"
-version = "0.2.1"
+version = "0.2.2"
 description = "CLI tool for scaffolding and maintaining GDS IDEA web apps on AWS"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -27,8 +27,8 @@ include = [
     "src/gds_idea_app_kit/templates/**",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.0",
     "ruff>=0.8.0",
 ]

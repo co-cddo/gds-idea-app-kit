@@ -19,7 +19,8 @@ logging.getLogger("uvicorn.access").setLevel(logging.WARNING)  # Uvicorn access 
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-auth = FastAPIAuth(app)
+auth = FastAPIAuth()
+auth.protect_app(app)
 
 
 # Health check endpoint for ECS/ALB (unprotected)
@@ -31,7 +32,7 @@ def health_check():
 # Main route - protected by app-wide auth middleware
 @app.get("/")
 def index(request: Request):
-    user = auth.get_current_user(request)
+    user = auth.get_auth_user(request)
 
     return {
         "message": "You are Authorised!",
@@ -44,6 +45,6 @@ def index(request: Request):
 # Additional example route - also automatically protected
 @app.get("/api/user")
 def get_user(request: Request):
-    user = auth.get_current_user(request)
+    user = auth.get_auth_user(request)
 
     return {"email": user.email, "groups": user.groups if hasattr(user, "groups") else []}
