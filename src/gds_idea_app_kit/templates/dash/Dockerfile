@@ -31,9 +31,9 @@ COPY --chown=$USERNAME:$USERNAME app_src/uv.loc[k] ./
 # uncomment build-essential below to add C/C++ compilers:
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       ca-certificates \
-       git \
-       # build-essential \
+    ca-certificates \
+    git \
+    # build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Switch to non-root user for dependency installation
@@ -47,7 +47,7 @@ COPY --chown=$USERNAME:$USERNAME app_src/ .
 
 EXPOSE 8080
 
-CMD ["uv", "run", "gunicorn", "dash_app:server", "-b", "0.0.0.0:8080", "--workers", "1"]
+CMD ["uv", "run", "gunicorn", "dash_app:server", "-b", "0.0.0.0:8080", "--workers", "1", "--preload", "--timeout", "120", "--no-control-socket"]
 
 # ============================================================================
 # Development stage - for dev containers (NOT DEFAULT)
