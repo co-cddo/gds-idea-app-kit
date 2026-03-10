@@ -1,0 +1,47 @@
+name: CI/CD Orchestrator for CDK Apps
+
+on:
+  push:
+    branches: 
+      - prod
+      - dev
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  
+jobs:
+  ci_pr_dev:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pr_dev.yml@main
+    with:
+      run-version-check: false
+      
+  ci_build:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_build.yml@main
+    with:
+      run-version-check: false
+
+  ci_pyproject_version:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pyproject_version.yml@main
+    with:
+      run-version-check: false
+
+  ci_lint:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_lint.yml@main
+    with:
+      run-version-check: false
+
+  ci_tests:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_tests.yml@main
+    with:
+      run-version-check: false
+
+  ci_cdk_diff:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_cdk_diff.yml@main
+    with:
+      run-version-check: false
+
+  cd:
+    needs: [ci_pr_dev, ci_build, ci_pyproject_version, ci_lint, ci_tests, ci_cdk_diff]
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/cd_workflow_cdk.yml@main
