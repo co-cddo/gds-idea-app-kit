@@ -3,7 +3,7 @@ name: CI/CD Orchestrator for CDK Apps
 on:
   push:
     branches: 
-      - main
+      - prod
       - dev
 
 permissions:
