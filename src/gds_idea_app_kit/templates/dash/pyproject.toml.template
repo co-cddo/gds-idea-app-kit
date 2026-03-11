@@ -5,7 +5,7 @@ description = "Dash app with Cognito authentication"
 requires-python = ">={{python_version}}"
 dependencies = [
     "cognito-auth[dash] @ git+https://github.com/co-cddo/gds-idea-app-auth.git",
-    "gunicorn>=21.0.0",
+    "gunicorn>=25.1.0",
 ]
 
 [tool.ruff]
