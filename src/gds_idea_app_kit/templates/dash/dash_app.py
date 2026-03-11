@@ -20,8 +20,6 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)  # Flask logger
 # Your app logger
 logger = logging.getLogger(__name__)
 
-REDIRECT_URL = "https://gds-idea.click/401.html"
-
 app = Dash(__name__)
 
 

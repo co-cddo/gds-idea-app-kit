@@ -17,8 +17,6 @@ logging.getLogger("boto3").setLevel(logging.WARNING)
 # Your app logger
 logger = logging.getLogger(__name__)
 
-REDIRECT_URL = "https://gds-idea.click/401.html"
-
 auth = StreamlitAuth()
 
 user = auth.get_auth_user()
