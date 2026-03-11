@@ -1,6 +1,6 @@
 [project]
 name = "{{app_name}}"
-version = "0.1.0"
+version = "0.0.0"  # Version managed in root pyproject.toml
 description = "Streamlit app with Cognito authentication"
 requires-python = ">={{python_version}}"
 dependencies = [

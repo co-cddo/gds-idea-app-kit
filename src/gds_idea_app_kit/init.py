@@ -284,6 +284,12 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml",
     )
 
+    # -- Copy CI (PR) workflow --
+    _copy_template(
+        templates / "common" / "ci_pr_cdk_app.yml",
+        project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml",
+    )
+
     # -- Copy .devcontainer/ files --
     _copy_template(
         templates / "common" / "devcontainer.json",

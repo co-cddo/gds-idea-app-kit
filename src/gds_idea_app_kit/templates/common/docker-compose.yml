@@ -21,6 +21,9 @@ services:
       # Mount app source for live editing and auto-reload
       - ../app_src:/app
 
+      # Preserve container's .venv (prevents host .venv overwriting it)
+      - /app/.venv
+
       # Mount dev mock files directory (can be empty)
       - ../dev_mocks:/app/dev_mocks
 

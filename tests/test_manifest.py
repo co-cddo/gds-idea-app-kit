@@ -33,6 +33,7 @@ def tracked_project(project_dir):
     (project_dir / ".devcontainer" / "docker-compose.yml").write_text("services:")
     (project_dir / ".github" / "workflows").mkdir(parents=True)
     (project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml").write_text("name: CI/CD")
+    (project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml").write_text("name: CI PR")
     (project_dir / "dev_mocks").mkdir()
     (project_dir / "dev_mocks" / "dev_mock_authoriser.json").write_text("{}")
     (project_dir / "dev_mocks" / "dev_mock_user.json").write_text("{}")
@@ -87,6 +88,7 @@ def test_tracked_files_include_common_destinations(framework):
     tracked = get_tracked_files(framework)
     destinations = set(tracked.values())
     assert ".github/workflows/ci_cd_cdk_app.yml" in destinations
+    assert ".github/workflows/ci_pr_cdk_app.yml" in destinations
     assert ".devcontainer/devcontainer.json" in destinations
     assert ".devcontainer/docker-compose.yml" in destinations
     assert "dev_mocks/dev_mock_authoriser.json" in destinations
@@ -177,7 +179,7 @@ def test_build_manifest_hashes_all_tracked_files(tracked_project):
     assert result["framework"] == "streamlit"
     assert result["app_name"] == "test-app"
     assert result["tool_version"] == "0.1.0"
-    assert len(result["files"]) == 6
+    assert len(result["files"]) == 7
     for file_hash in result["files"].values():
         assert file_hash.startswith("sha256:")
 

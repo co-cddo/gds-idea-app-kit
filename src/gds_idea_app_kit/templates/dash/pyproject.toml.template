@@ -1,11 +1,11 @@
 [project]
 name = "{{app_name}}"
-version = "0.1.0"
+version = "0.0.0"  # Version managed in root pyproject.toml
 description = "Dash app with Cognito authentication"
 requires-python = ">={{python_version}}"
 dependencies = [
     "cognito-auth[dash] @ git+https://github.com/co-cddo/gds-idea-app-auth.git",
-    "gunicorn>=21.0.0",
+    "gunicorn>=25.1.0",
 ]
 
 [tool.ruff]
