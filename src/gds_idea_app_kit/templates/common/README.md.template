@@ -1,0 +1,40 @@
+# {{app_name}}
+
+_Brief description of your application._
+
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/) for Python package management
+- [AWS CDK](https://docs.aws.amazon.com/cdk/) for infrastructure deployment
+- [Docker](https://www.docker.com/) for local development and production builds
+- SSH access to the `co-cddo` GitHub organisation
+
+## Getting started
+
+1. Open the project in VS Code and reopen in the dev container when prompted.
+
+2. Provide AWS credentials to the dev container:
+
+   ```bash
+   idea-app provide-role
+   ```
+
+3. Run the application locally:
+
+   ```bash
+   idea-app smoke-test
+   ```
+
+## Deployment
+
+This project uses AWS CDK for infrastructure. See `app.py` for the stack definition.
+
+## Testing
+
+```bash
+uv run pytest
+```
+
+## Licence
+
+[MIT License](LICENCE)

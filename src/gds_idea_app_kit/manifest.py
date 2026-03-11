@@ -21,6 +21,7 @@ TOOL_OWNED_FILES = {
     "common/dependabot.yml": ".github/dependabot.yml",
     "common/devcontainer.json": ".devcontainer/devcontainer.json",
     "common/docker-compose.yml": ".devcontainer/docker-compose.yml",
+    "common/LICENCE": "LICENCE",
     "dev_mocks/dev_mock_authoriser.json": "dev_mocks/dev_mock_authoriser.json",
     "dev_mocks/dev_mock_user.json": "dev_mocks/dev_mock_user.json",
 }

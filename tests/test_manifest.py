@@ -35,6 +35,7 @@ def tracked_project(project_dir):
     (project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml").write_text("name: CI/CD")
     (project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml").write_text("name: CI PR")
     (project_dir / ".github" / "dependabot.yml").write_text("version: 2")
+    (project_dir / "LICENCE").write_text("MIT")
     (project_dir / "dev_mocks").mkdir()
     (project_dir / "dev_mocks" / "dev_mock_authoriser.json").write_text("{}")
     (project_dir / "dev_mocks" / "dev_mock_user.json").write_text("{}")
@@ -91,6 +92,7 @@ def test_tracked_files_include_common_destinations(framework):
     assert ".github/workflows/ci_cd_cdk_app.yml" in destinations
     assert ".github/workflows/ci_pr_cdk_app.yml" in destinations
     assert ".github/dependabot.yml" in destinations
+    assert "LICENCE" in destinations
     assert ".devcontainer/devcontainer.json" in destinations
     assert ".devcontainer/docker-compose.yml" in destinations
     assert "dev_mocks/dev_mock_authoriser.json" in destinations
@@ -181,7 +183,7 @@ def test_build_manifest_hashes_all_tracked_files(tracked_project):
     assert result["framework"] == "streamlit"
     assert result["app_name"] == "test-app"
     assert result["tool_version"] == "0.1.0"
-    assert len(result["files"]) == 8
+    assert len(result["files"]) == 9
     for file_hash in result["files"].values():
         assert file_hash.startswith("sha256:")
 

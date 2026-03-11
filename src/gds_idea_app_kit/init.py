@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from importlib.resources import files
 from pathlib import Path
 
@@ -249,6 +250,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         "app_name": app_name,
         "python_version": python_version,
         "python_version_nodot": python_version_nodot,
+        "year": str(datetime.now().year),
     }
     templates = _get_templates_dir()
 
@@ -318,6 +320,20 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     with open(gitignore, "a") as f:
         f.write("\n")
         f.write(extra)
+
+    # -- Copy LICENCE --
+    _copy_template(
+        templates / "common" / "LICENCE",
+        project_dir / "LICENCE",
+        variables=template_vars,
+    )
+
+    # -- Copy README --
+    _copy_template(
+        templates / "common" / "README.md.template",
+        project_dir / "README.md",
+        variables=template_vars,
+    )
 
     # -- Install CDK dependencies --
     click.echo("Installing CDK dependencies...")
