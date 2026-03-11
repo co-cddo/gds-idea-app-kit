@@ -33,11 +33,6 @@ jobs:
     with:
       run-version-check: false
 
-  ci_cdk_diff:
-    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_cdk_diff.yml@main
-    with:
-      run-version-check: false
-
   cd:
-    needs: [ci_build, ci_pyproject_version, ci_lint, ci_tests, ci_cdk_diff]
+    needs: [ci_build, ci_pyproject_version, ci_lint, ci_tests]
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/cd_workflow_cdk.yml@main
