@@ -17,6 +17,7 @@ MANIFEST_KEY = "gds-idea-app-kit"
 # The dict maps template source path -> destination path in the project.
 TOOL_OWNED_FILES = {
     "common/ci_cd_cdk_app.yml": ".github/workflows/ci_cd_cdk_app.yml",
+    "common/ci_pr_cdk_app.yml": ".github/workflows/ci_pr_cdk_app.yml",
     "common/devcontainer.json": ".devcontainer/devcontainer.json",
     "common/docker-compose.yml": ".devcontainer/docker-compose.yml",
     "dev_mocks/dev_mock_authoriser.json": "dev_mocks/dev_mock_authoriser.json",
