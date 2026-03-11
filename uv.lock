@@ -52,7 +52,7 @@ wheels = [
 
 [[package]]
 name = "gds-idea-app-kit"
-version = "0.2.4"
+version = "0.2.6"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
