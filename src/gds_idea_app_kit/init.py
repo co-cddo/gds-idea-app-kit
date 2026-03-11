@@ -290,6 +290,12 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml",
     )
 
+    # -- Copy Dependabot config --
+    _copy_template(
+        templates / "common" / "dependabot.yml",
+        project_dir / ".github" / "dependabot.yml",
+    )
+
     # -- Copy .devcontainer/ files --
     _copy_template(
         templates / "common" / "devcontainer.json",

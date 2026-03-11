@@ -18,6 +18,7 @@ MANIFEST_KEY = "gds-idea-app-kit"
 TOOL_OWNED_FILES = {
     "common/ci_cd_cdk_app.yml": ".github/workflows/ci_cd_cdk_app.yml",
     "common/ci_pr_cdk_app.yml": ".github/workflows/ci_pr_cdk_app.yml",
+    "common/dependabot.yml": ".github/dependabot.yml",
     "common/devcontainer.json": ".devcontainer/devcontainer.json",
     "common/docker-compose.yml": ".devcontainer/docker-compose.yml",
     "dev_mocks/dev_mock_authoriser.json": "dev_mocks/dev_mock_authoriser.json",
