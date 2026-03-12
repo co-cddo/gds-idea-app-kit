@@ -22,16 +22,32 @@ You also need SSH access to the `co-cddo` GitHub organisation (for private CDK c
 
 ## Installation
 
-`idea-app` is installed as a global CLI tool, not as a per-project dependency:
+`idea-app` is installed as a global CLI tool, not as a per-project dependency. Install it via the [GDS IDEA package index](https://co-cddo.github.io/gds-idea-pypi/).
+
+**Recommended — using `idea-tools`** (see the [index page](https://co-cddo.github.io/gds-idea-pypi/) for one-time setup):
 
 ```bash
-uv tool install "gds-idea-app-kit @ git+https://github.com/co-cddo/gds-idea-app-kit"
+idea-tools install gds-idea-app-kit
+```
+
+**Alternative — without `idea-tools`:**
+
+```bash
+uv tool install gds-idea-app-kit --index gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/
 ```
 
 To upgrade to the latest version:
 
 ```bash
+idea-tools upgrade gds-idea-app-kit
+# or without idea-tools:
 uv tool upgrade gds-idea-app-kit
+```
+
+If you previously installed from a git URL, switch to the index:
+
+```bash
+idea-tools install gds-idea-app-kit --reinstall
 ```
 
 Verify it's working:
