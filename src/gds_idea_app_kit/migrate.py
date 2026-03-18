@@ -21,7 +21,8 @@ import tomlkit
 
 from gds_idea_app_kit import __version__
 from gds_idea_app_kit.manifest import build_manifest, read_manifest, write_manifest
-from gds_idea_app_kit.update import check_tool_is_current, run_update
+from gds_idea_app_kit.update import run_update
+from gds_idea_app_kit.version import check_tool_is_current
 
 
 def _detect_python_version(project_dir: Path) -> str:

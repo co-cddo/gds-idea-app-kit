@@ -22,7 +22,7 @@ from gds_idea_app_kit import (
 )
 from gds_idea_app_kit.manifest import build_manifest, write_manifest
 from gds_idea_app_kit.prerequisites import check_prerequisites
-from gds_idea_app_kit.update import check_tool_is_current
+from gds_idea_app_kit.version import check_tool_is_current
 
 
 def _sanitize_app_name(name: str) -> str:
