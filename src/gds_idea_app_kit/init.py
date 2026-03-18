@@ -344,12 +344,17 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     # -- Install CDK dependencies --
     click.echo("Installing CDK dependencies...")
     _run_command(
+        ["uv", "add", "aws-cdk-lib", "constructs"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+    _run_command(
         [
             "uv",
             "add",
-            "aws-cdk-lib",
-            "constructs",
-            "gds-idea-cdk-constructs @ git+ssh://git@github.com/co-cddo/gds-idea-cdk-constructs.git",
+            "gds-idea-cdk-constructs>=0.3.0",
+            "--index",
+            "gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/",
         ],
         cwd=project_dir,
         project_dir=project_dir,
