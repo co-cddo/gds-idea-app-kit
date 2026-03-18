@@ -210,8 +210,9 @@ def test_run_init_cdk_install_is_split_into_two_calls(tmp_path, monkeypatch):
             uv_add_calls.append(cmd)
         return MagicMock(returncode=0, stdout="", stderr="")
 
-    with patch("gds_idea_app_kit.init.check_prerequisites"), patch(
-        "gds_idea_app_kit.init._run_command", side_effect=fake_run_command
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
     ):
         run_init("streamlit", "test-app", "3.13")
 
@@ -233,8 +234,9 @@ def test_run_init_first_uv_add_is_pypi_packages(tmp_path, monkeypatch):
             uv_add_calls.append(cmd)
         return MagicMock(returncode=0, stdout="", stderr="")
 
-    with patch("gds_idea_app_kit.init.check_prerequisites"), patch(
-        "gds_idea_app_kit.init._run_command", side_effect=fake_run_command
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
     ):
         run_init("streamlit", "test-app", "3.13")
 
@@ -260,8 +262,9 @@ def test_run_init_second_uv_add_uses_gds_idea_index(tmp_path, monkeypatch):
             uv_add_calls.append(cmd)
         return MagicMock(returncode=0, stdout="", stderr="")
 
-    with patch("gds_idea_app_kit.init.check_prerequisites"), patch(
-        "gds_idea_app_kit.init._run_command", side_effect=fake_run_command
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
     ):
         run_init("streamlit", "test-app", "3.13")
 
