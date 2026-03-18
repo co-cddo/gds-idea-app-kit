@@ -25,7 +25,7 @@ jobs:
   ci_pyproject_version:
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pyproject_version.yml@main
     with:
-      run-version-check: false
+      run-version-check: true
 
   ci_lint:
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_lint.yml@main

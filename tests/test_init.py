@@ -1,5 +1,7 @@
 """Tests for init module helper functions."""
 
+from unittest.mock import MagicMock, patch
+
 import click
 import pytest
 
@@ -10,7 +12,10 @@ from gds_idea_app_kit.init import (
     _get_templates_dir,
     _run_command,
     _sanitize_app_name,
+    run_init,
 )
+
+GDS_IDEA_INDEX_URL = "https://co-cddo.github.io/gds-idea-pypi/simple/"
 
 # ---- _sanitize_app_name ----
 # Validates that app names are safe for use as DNS subdomain labels
@@ -136,6 +141,138 @@ def test_get_templates_dir_has_frameworks():
     assert (templates / "streamlit").is_dir()
     assert (templates / "dash").is_dir()
     assert (templates / "fastapi").is_dir()
+
+
+def test_get_templates_dir_has_codeowners_template():
+    """The CODEOWNERS.template file must be present in common/ so init can copy it."""
+    templates = _get_templates_dir()
+    assert (templates / "common" / "CODEOWNERS.template").is_file()
+
+
+# ---- pyproject.toml.template content ----
+# Verifies that each framework template declares cognito-auth from the internal
+# PyPI index rather than a git URL, and that the index stanzas are present.
+
+
+@pytest.mark.parametrize(
+    "framework, extra",
+    [
+        ("streamlit", "cognito-auth[streamlit]>=0.3.0"),
+        ("dash", "cognito-auth[dash]>=0.3.0"),
+        ("fastapi", "cognito-auth[fastapi]>=0.3.0"),
+    ],
+)
+def test_pyproject_template_uses_versioned_cognito_auth(framework, extra):
+    """cognito-auth is pinned to a version, not a git URL."""
+    templates = _get_templates_dir()
+    content = (templates / framework / "pyproject.toml.template").read_text()
+    assert extra in content
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_pyproject_template_has_no_git_url(framework):
+    """No git+https or git+ssh dependency URLs remain in any framework template."""
+    templates = _get_templates_dir()
+    content = (templates / framework / "pyproject.toml.template").read_text()
+    assert "git+https://" not in content
+    assert "git+ssh://" not in content
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_pyproject_template_has_gds_idea_index(framework):
+    """Each template declares the gds-idea index with the correct URL."""
+    templates = _get_templates_dir()
+    content = (templates / framework / "pyproject.toml.template").read_text()
+    assert "[tool.uv.sources]" in content
+    assert 'cognito-auth = { index = "gds-idea" }' in content
+    assert "[[tool.uv.index]]" in content
+    assert GDS_IDEA_INDEX_URL in content
+
+
+# ---- run_init CDK dependency install ----
+# Verifies that run_init makes two separate uv add calls: one for the public
+# PyPI packages (no --index) and one for the internal package with --index.
+
+
+def test_run_init_cdk_install_is_split_into_two_calls(tmp_path, monkeypatch):
+    """run_init calls uv add twice for CDK deps — PyPI packages and internal package separately."""
+    monkeypatch.chdir(tmp_path)
+
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            # Simulate uv init creating a minimal pyproject.toml
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-app"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("streamlit", "test-app", "3.13")
+
+    assert len(uv_add_calls) == 2
+
+
+def test_run_init_first_uv_add_is_pypi_packages(tmp_path, monkeypatch):
+    """The first uv add installs PyPI packages without an --index flag."""
+    monkeypatch.chdir(tmp_path)
+
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-app"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("streamlit", "test-app", "3.13")
+
+    first = uv_add_calls[0]
+    assert "aws-cdk-lib" in first
+    assert "constructs" in first
+    assert "--index" not in first
+    assert not any("git+ssh" in arg for arg in first)
+
+
+def test_run_init_second_uv_add_uses_gds_idea_index(tmp_path, monkeypatch):
+    """The second uv add installs gds-idea-cdk-constructs from the internal index."""
+    monkeypatch.chdir(tmp_path)
+
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-app"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("streamlit", "test-app", "3.13")
+
+    second = uv_add_calls[1]
+    assert "gds-idea-cdk-constructs>=0.3.0" in second
+    assert "--index" in second
+    assert any(GDS_IDEA_INDEX_URL in arg for arg in second)
+    assert not any("git+ssh" in arg for arg in second)
 
 
 # ---- _apply_template_vars ----

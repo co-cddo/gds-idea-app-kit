@@ -1,0 +1,5 @@
+# Any changes inside the common folder will require approval from @gds-idea-senior-ds
+
+/src/gds_idea_app_kit/templates/common/ci_cd_cdk_app.yml @gds-idea-senior-ds
+
+/src/gds_idea_app_kit/templates/common/ci_pr_cdk_app.yml @gds-idea-senior-ds
