@@ -16,8 +16,6 @@ Install with [Homebrew](https://brew.sh/):
 brew install uv node git docker docker-compose colima aws-cdk
 ```
 
-You also need SSH access to the `co-cddo` GitHub organisation (for private CDK construct dependencies).
-
 `idea-app init` will check all prerequisites are installed before creating a project. If anything is missing, it will tell you what to install.
 
 ## Installation
