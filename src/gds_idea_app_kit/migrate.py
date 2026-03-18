@@ -21,7 +21,7 @@ import tomlkit
 
 from gds_idea_app_kit import __version__
 from gds_idea_app_kit.manifest import build_manifest, read_manifest, write_manifest
-from gds_idea_app_kit.update import run_update
+from gds_idea_app_kit.update import check_tool_is_current, run_update
 
 
 def _detect_python_version(project_dir: Path) -> str:
@@ -156,6 +156,9 @@ def run_migrate() -> None:
         click.echo("This project has already been migrated.", err=True)
         click.echo("  Use 'idea-app update' instead.", err=True)
         sys.exit(1)
+
+    # -- Check tool is current --
+    check_tool_is_current()
 
     webapp_config = _read_webapp_config(project_dir)
     framework = webapp_config["framework"]
