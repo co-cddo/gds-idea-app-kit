@@ -29,6 +29,7 @@ from gds_idea_app_kit.manifest import (
     read_manifest,
     write_manifest,
 )
+from gds_idea_app_kit.version import _parse_version, check_tool_is_current
 
 
 class Action(Enum):
@@ -55,18 +56,6 @@ class FileUpdate:
     dest_full: Path
     new_content: str
     action: Action
-
-
-def _parse_version(version: str) -> tuple[int, ...]:
-    """Parse a dotted version string into a tuple of integers for comparison.
-
-    Args:
-        version: A dotted version string (e.g. "0.1.0").
-
-    Returns:
-        Tuple of integers (e.g. (0, 1, 0)).
-    """
-    return tuple(int(x) for x in version.split("."))
 
 
 def _check_version(manifest: dict) -> None:
@@ -276,6 +265,9 @@ def run_update(dry_run: bool, force: bool = False) -> None:
     if not pyproject_path.exists():
         click.echo("Error: No pyproject.toml found. Are you in a project root?", err=True)
         sys.exit(1)
+
+    # -- Check tool is current --
+    check_tool_is_current()
 
     # -- Read manifest --
     manifest = read_manifest(project_dir)
