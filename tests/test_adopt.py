@@ -15,9 +15,7 @@ from gds_idea_app_kit.manifest import MANIFEST_KEY, read_manifest
 def cdk_project(tmp_path):
     """Create a minimal existing CDK project directory."""
     pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text(
-        '[project]\nname = "gds-idea-app-my-infra"\nversion = "0.1.0"\n\n[tool]\n'
-    )
+    pyproject.write_text('[project]\nname = "gds-idea-app-my-infra"\nversion = "0.1.0"\n\n[tool]\n')
     cdk_json = tmp_path / "cdk.json"
     cdk_json.write_text('{"app": "python3 app.py"}')
     gitignore = tmp_path / ".gitignore"
@@ -73,7 +71,7 @@ def test_adopt_fails_with_existing_manifest(cdk_project, capsys):
 def test_adopt_fails_without_project_name(tmp_path, capsys):
     """adopt exits with an error when [project].name is missing."""
     os.chdir(tmp_path)
-    (tmp_path / "pyproject.toml").write_text("[project]\nversion = \"0.1.0\"\n")
+    (tmp_path / "pyproject.toml").write_text('[project]\nversion = "0.1.0"\n')
     (tmp_path / "cdk.json").write_text("{}")
 
     with (
