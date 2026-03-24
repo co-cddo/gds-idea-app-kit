@@ -23,7 +23,7 @@ class AliasGroup(click.Group):
 @click.group(cls=AliasGroup)
 @click.version_option(version=__version__, prog_name="idea-app")
 def cli():
-    """GDS IDEA App Kit - scaffold and maintain web apps on AWS."""
+    """GDS IDEA App Kit - scaffold and maintain CDK projects on AWS."""
 
 
 @cli.command()
@@ -85,3 +85,11 @@ def migrate():
     from gds_idea_app_kit.migrate import run_migrate
 
     run_migrate()
+
+
+@cli.command()
+def adopt():
+    """Add CI/CD and config to an existing CDK project."""
+    from gds_idea_app_kit.adopt import run_adopt
+
+    run_adopt()
