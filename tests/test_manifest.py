@@ -103,6 +103,14 @@ def test_tracked_files_include_common_destinations(framework):
 
 
 @pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_tracked_files_web_sources_use_web_common(framework):
+    """Web-only files are sourced from web_common/ directory."""
+    tracked = get_tracked_files(framework)
+    assert "web_common/devcontainer.json" in tracked
+    assert "web_common/docker-compose.yml" in tracked
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
 def test_tracked_files_codeowners_source_is_template(framework):
     """CODEOWNERS.template is the source key (not CODEOWNERS) for the .github/CODEOWNERS dest."""
     tracked = get_tracked_files(framework)
@@ -122,6 +130,35 @@ def test_tracked_files_differ_across_frameworks():
     assert "streamlit/Dockerfile" in streamlit
     assert "streamlit/Dockerfile" not in fastapi
     assert "fastapi/Dockerfile" in fastapi
+
+
+def test_tracked_files_infra_has_common_only():
+    """Infra projects only track common files (no web, no Dockerfile)."""
+    tracked = get_tracked_files("infra")
+    destinations = set(tracked.values())
+    assert ".github/workflows/ci_cd_cdk_app.yml" in destinations
+    assert ".github/workflows/ci_pr_cdk_app.yml" in destinations
+    assert ".github/CODEOWNERS" in destinations
+    assert ".github/dependabot.yml" in destinations
+    assert "LICENCE" in destinations
+    # Should NOT have web-specific files
+    assert ".devcontainer/devcontainer.json" not in destinations
+    assert ".devcontainer/docker-compose.yml" not in destinations
+    assert "dev_mocks/dev_mock_authoriser.json" not in destinations
+    assert "dev_mocks/dev_mock_user.json" not in destinations
+    assert "app_src/Dockerfile" not in destinations
+
+
+def test_tracked_files_infra_count():
+    """Infra projects track exactly 5 common files."""
+    tracked = get_tracked_files("infra")
+    assert len(tracked) == 5
+
+
+def test_tracked_files_web_count():
+    """Web projects track 10 files (5 common + 4 web + 1 framework)."""
+    tracked = get_tracked_files("streamlit")
+    assert len(tracked) == 10
 
 
 # ---- read_manifest ----
@@ -225,6 +262,26 @@ def test_build_manifest_hash_matches_content(project_dir):
     )
     expected = f"sha256:{hashlib.sha256(content.encode()).hexdigest()}"
     assert result["files"]["app_src/Dockerfile"] == expected
+
+
+def test_build_manifest_infra_tracks_common_files_only(project_dir):
+    """Building manifest for infra project only tracks common files."""
+    (project_dir / ".github" / "workflows").mkdir(parents=True)
+    (project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml").write_text("name: CI/CD")
+    (project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml").write_text("name: CI PR")
+    (project_dir / ".github" / "CODEOWNERS").write_text("* @gds-idea-senior-ds")
+    (project_dir / ".github" / "dependabot.yml").write_text("version: 2")
+    (project_dir / "LICENCE").write_text("MIT")
+
+    result = build_manifest(
+        framework="infra",
+        app_name="test-infra",
+        tool_version="0.1.0",
+        project_dir=project_dir,
+    )
+    assert len(result["files"]) == 5
+    assert "app_src/Dockerfile" not in result["files"]
+    assert ".devcontainer/devcontainer.json" not in result["files"]
 
 
 # ---- round-trip ----
