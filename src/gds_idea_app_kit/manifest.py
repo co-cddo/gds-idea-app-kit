@@ -10,24 +10,30 @@ from pathlib import Path
 
 import tomlkit
 
+from gds_idea_app_kit import WEB_FRAMEWORKS
+
 # Key used in pyproject.toml [tool.*] section
 MANIFEST_KEY = "gds-idea-app-kit"
 
-# Files that `update` manages, keyed by source location in the templates directory.
+# Files that `update` manages for ALL project types.
 # The dict maps template source path -> destination path in the project.
 TOOL_OWNED_FILES = {
     "common/ci_cd_cdk_app.yml": ".github/workflows/ci_cd_cdk_app.yml",
     "common/ci_pr_cdk_app.yml": ".github/workflows/ci_pr_cdk_app.yml",
     "common/CODEOWNERS.template": ".github/CODEOWNERS",
     "common/dependabot.yml": ".github/dependabot.yml",
-    "common/devcontainer.json": ".devcontainer/devcontainer.json",
-    "common/docker-compose.yml": ".devcontainer/docker-compose.yml",
     "common/LICENCE": "LICENCE",
+}
+
+# Files that `update` manages only for web framework projects.
+WEB_OWNED_FILES = {
+    "web_common/devcontainer.json": ".devcontainer/devcontainer.json",
+    "web_common/docker-compose.yml": ".devcontainer/docker-compose.yml",
     "dev_mocks/dev_mock_authoriser.json": "dev_mocks/dev_mock_authoriser.json",
     "dev_mocks/dev_mock_user.json": "dev_mocks/dev_mock_user.json",
 }
 
-# Framework-specific files that `update` manages.
+# Framework-specific files that `update` manages (web frameworks only).
 # The framework name is substituted at runtime.
 FRAMEWORK_OWNED_FILES = {
     "Dockerfile": "app_src/Dockerfile",
@@ -52,14 +58,16 @@ def get_tracked_files(framework: str) -> dict[str, str]:
     """Get the full mapping of template source -> project destination for a framework.
 
     Args:
-        framework: The framework name (streamlit, dash, fastapi).
+        framework: The project type (streamlit, dash, fastapi, or infra).
 
     Returns:
         Dict mapping template source paths to project destination paths.
     """
     files = dict(TOOL_OWNED_FILES)
-    for template_name, dest_path in FRAMEWORK_OWNED_FILES.items():
-        files[f"{framework}/{template_name}"] = dest_path
+    if framework in WEB_FRAMEWORKS:
+        files.update(WEB_OWNED_FILES)
+        for template_name, dest_path in FRAMEWORK_OWNED_FILES.items():
+            files[f"{framework}/{template_name}"] = dest_path
     return files
 
 
@@ -114,7 +122,7 @@ def build_manifest(
     """Build a manifest dict by hashing the tracked files in project_dir.
 
     Args:
-        framework: The framework name (streamlit, dash, fastapi).
+        framework: The project type (streamlit, dash, fastapi, or infra).
         app_name: The application name.
         tool_version: The version of gds-idea-app-kit that generated the project.
         project_dir: Root directory of the project.

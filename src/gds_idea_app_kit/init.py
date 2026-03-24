@@ -4,11 +4,6 @@ Scaffolds a new project by running cdk init, uv init, copying template files,
 installing dependencies, and making the initial commit.
 """
 
-# Web frameworks that produce a containerised web app with devcontainer and
-# dev-mock support.  The "infra" project type is infrastructure-only and
-# skips all of these extras.
-WEB_FRAMEWORKS = {"streamlit", "dash", "fastapi"}
-
 import re
 import shutil
 import subprocess
@@ -23,6 +18,7 @@ import tomlkit
 from gds_idea_app_kit import (
     GITHUB_ORG,
     REPO_PREFIX,
+    WEB_FRAMEWORKS,
     __version__,
 )
 from gds_idea_app_kit.manifest import build_manifest, write_manifest

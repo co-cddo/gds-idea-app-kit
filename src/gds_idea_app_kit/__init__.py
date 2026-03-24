@@ -1,4 +1,4 @@
-"""GDS IDEA App Kit - CLI tool for scaffolding and maintaining web apps on AWS."""
+"""GDS IDEA App Kit - CLI tool for scaffolding and maintaining CDK projects on AWS."""
 
 from importlib.metadata import version
 
@@ -12,3 +12,8 @@ GITHUB_ORG = "co-cddo"
 
 # Prefix applied to all generated project directories: gds-idea-app-{name}
 REPO_PREFIX = "gds-idea-app"
+
+# Web frameworks that produce a containerised web app with devcontainer and
+# dev-mock support.  The "infra" project type is infrastructure-only and
+# skips all of these extras.
+WEB_FRAMEWORKS = {"streamlit", "dash", "fastapi"}
