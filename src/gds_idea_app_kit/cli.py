@@ -27,7 +27,7 @@ def cli():
 
 
 @cli.command()
-@click.argument("framework", type=click.Choice(["streamlit", "dash", "fastapi"]))
+@click.argument("framework", type=click.Choice(["streamlit", "dash", "fastapi", "infra"]))
 @click.argument("app_name")
 @click.option(
     "--python",
@@ -37,7 +37,7 @@ def cli():
     help="Python version for the project.",
 )
 def init(framework: str, app_name: str, python_version: str):
-    """Scaffold a new project: idea-app init <framework> <app-name>."""
+    """Scaffold a new project: idea-app init <framework|infra> <app-name>."""
     from gds_idea_app_kit.init import run_init
 
     run_init(framework=framework, app_name=app_name, python_version=python_version)
