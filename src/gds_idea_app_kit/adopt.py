@@ -13,18 +13,15 @@ import click
 import tomlkit
 
 from gds_idea_app_kit import (
-    GITHUB_ORG,
     REPO_PREFIX,
     __version__,
 )
 from gds_idea_app_kit.init import (
-    _apply_template_vars,
     _copy_template,
     _get_templates_dir,
     _run_command,
 )
 from gds_idea_app_kit.manifest import (
-    MANIFEST_KEY,
     build_manifest,
     read_manifest,
     write_manifest,

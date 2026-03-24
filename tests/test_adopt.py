@@ -8,7 +8,6 @@ import pytest
 from gds_idea_app_kit.adopt import run_adopt
 from gds_idea_app_kit.manifest import MANIFEST_KEY, read_manifest
 
-
 # ---- fixtures ----
 
 
