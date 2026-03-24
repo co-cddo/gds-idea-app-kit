@@ -18,13 +18,14 @@ def test_version(cli_runner):
 
 
 def test_help_lists_all_commands(cli_runner):
-    """--help lists all four commands."""
+    """--help lists all commands."""
     result = cli_runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
     assert "init" in result.output
     assert "update" in result.output
     assert "smoke-test" in result.output
     assert "provide-role" in result.output
+    assert "adopt" in result.output
 
 
 # ---- init command ----
@@ -37,11 +38,12 @@ def test_init_help_shows_options(cli_runner):
     assert "streamlit" in result.output
     assert "dash" in result.output
     assert "fastapi" in result.output
+    assert "infra" in result.output
     assert "--python" in result.output
     assert DEFAULT_PYTHON_VERSION in result.output
 
 
-@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi", "infra"])
 def test_init_valid_framework(cli_runner, framework):
     """init accepts valid framework and passes correct args to run_init."""
     with patch("gds_idea_app_kit.init.run_init") as mock:
@@ -248,3 +250,21 @@ def test_underscore_aliases_not_in_help(cli_runner):
     result = cli_runner.invoke(cli, ["--help"])
     assert "smoke_test" not in result.output
     assert "provide_role" not in result.output
+
+
+# ---- adopt command ----
+
+
+def test_adopt_help_shows_description(cli_runner):
+    """adopt --help shows the command description."""
+    result = cli_runner.invoke(cli, ["adopt", "--help"])
+    assert result.exit_code == 0
+    assert "CI/CD" in result.output
+
+
+def test_adopt_runs(cli_runner):
+    """adopt calls run_adopt."""
+    with patch("gds_idea_app_kit.adopt.run_adopt") as mock:
+        result = cli_runner.invoke(cli, ["adopt"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with()

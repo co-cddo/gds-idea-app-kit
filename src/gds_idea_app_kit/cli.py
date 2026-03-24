@@ -23,11 +23,11 @@ class AliasGroup(click.Group):
 @click.group(cls=AliasGroup)
 @click.version_option(version=__version__, prog_name="idea-app")
 def cli():
-    """GDS IDEA App Kit - scaffold and maintain web apps on AWS."""
+    """GDS IDEA App Kit - scaffold and maintain CDK projects on AWS."""
 
 
 @cli.command()
-@click.argument("framework", type=click.Choice(["streamlit", "dash", "fastapi"]))
+@click.argument("framework", type=click.Choice(["streamlit", "dash", "fastapi", "infra"]))
 @click.argument("app_name")
 @click.option(
     "--python",
@@ -37,7 +37,7 @@ def cli():
     help="Python version for the project.",
 )
 def init(framework: str, app_name: str, python_version: str):
-    """Scaffold a new project: idea-app init <framework> <app-name>."""
+    """Scaffold a new project: idea-app init <framework|infra> <app-name>."""
     from gds_idea_app_kit.init import run_init
 
     run_init(framework=framework, app_name=app_name, python_version=python_version)
@@ -85,3 +85,11 @@ def migrate():
     from gds_idea_app_kit.migrate import run_migrate
 
     run_migrate()
+
+
+@cli.command()
+def adopt():
+    """Add CI/CD and config to an existing CDK project."""
+    from gds_idea_app_kit.adopt import run_adopt
+
+    run_adopt()

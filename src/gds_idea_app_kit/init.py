@@ -18,6 +18,7 @@ import tomlkit
 from gds_idea_app_kit import (
     GITHUB_ORG,
     REPO_PREFIX,
+    WEB_FRAMEWORKS,
     __version__,
 )
 from gds_idea_app_kit.manifest import build_manifest, write_manifest
@@ -203,14 +204,18 @@ def _write_webapp_config(project_dir: Path, app_name: str, framework: str) -> No
 def run_init(framework: str, app_name: str, python_version: str) -> None:
     """Scaffold a new project.
 
-    Creates a fully configured CDK + web app project with the given framework.
-    The project directory will be named gds-idea-app-{app_name}.
+    Creates a fully configured CDK project.  For web frameworks (streamlit,
+    dash, fastapi) this includes a containerised app with devcontainer and
+    dev-mock support.  For "infra" projects, only CDK infrastructure scaffolding
+    and common CI/CD files are created.
 
     Args:
-        framework: The web framework (streamlit, dash, fastapi).
+        framework: The project type (streamlit, dash, fastapi, or infra).
         app_name: Name for the application.
         python_version: Python version for the project.
     """
+    is_web = framework in WEB_FRAMEWORKS
+
     # -- Validate inputs --
     app_name = _sanitize_app_name(app_name)
     repo_name = f"{REPO_PREFIX}-{app_name}"
@@ -224,9 +229,13 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     check_tool_is_current()
 
     # -- Check prerequisites before creating anything --
-    check_prerequisites()
+    # Infra projects don't need Docker.
+    if is_web:
+        check_prerequisites()
+    else:
+        check_prerequisites(only=["cdk", "uv", "git"])
 
-    click.echo(f"Scaffolding {framework} app: {app_name}")
+    click.echo(f"Scaffolding {framework} project: {app_name}")
     click.echo(f"  Directory: {repo_name}/")
     click.echo(f"  Python: {python_version}")
     click.echo()
@@ -260,29 +269,33 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
 
     # -- Copy app.py (CDK entry point) --
     click.echo("Copying template files...")
-    _copy_template(templates / "common" / "app.py", project_dir / "app.py")
+    if is_web:
+        _copy_template(templates / "web_common" / "app.py", project_dir / "app.py")
+    else:
+        _copy_template(templates / "infra" / "app.py", project_dir / "app.py")
 
-    # -- Copy framework files into app_src/ --
-    app_src = project_dir / "app_src"
-    app_src.mkdir(exist_ok=True)
+    # -- Copy framework files into app_src/ (web frameworks only) --
+    if is_web:
+        app_src = project_dir / "app_src"
+        app_src.mkdir(exist_ok=True)
 
-    # Framework app file (e.g. streamlit_app.py)
-    framework_app = f"{framework}_app.py"
-    _copy_template(templates / framework / framework_app, app_src / framework_app)
+        # Framework app file (e.g. streamlit_app.py)
+        framework_app = f"{framework}_app.py"
+        _copy_template(templates / framework / framework_app, app_src / framework_app)
 
-    # Dockerfile (has template vars for python version)
-    _copy_template(
-        templates / framework / "Dockerfile",
-        app_src / "Dockerfile",
-        variables=template_vars,
-    )
+        # Dockerfile (has template vars for python version)
+        _copy_template(
+            templates / framework / "Dockerfile",
+            app_src / "Dockerfile",
+            variables=template_vars,
+        )
 
-    # App pyproject.toml (from .toml.template with substitution)
-    _copy_template(
-        templates / framework / "pyproject.toml.template",
-        app_src / "pyproject.toml",
-        variables=template_vars,
-    )
+        # App pyproject.toml (from .toml.template with substitution)
+        _copy_template(
+            templates / framework / "pyproject.toml.template",
+            app_src / "pyproject.toml",
+            variables=template_vars,
+        )
 
     # -- Copy CI/CD workflow --
     _copy_template(
@@ -308,21 +321,21 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         project_dir / ".github" / "dependabot.yml",
     )
 
-    # -- Copy .devcontainer/ files --
-    _copy_template(
-        templates / "common" / "devcontainer.json",
-        project_dir / ".devcontainer" / "devcontainer.json",
-    )
-    _copy_template(
-        templates / "common" / "docker-compose.yml",
-        project_dir / ".devcontainer" / "docker-compose.yml",
-    )
+    # -- Copy .devcontainer/ and dev_mocks/ (web frameworks only) --
+    if is_web:
+        _copy_template(
+            templates / "web_common" / "devcontainer.json",
+            project_dir / ".devcontainer" / "devcontainer.json",
+        )
+        _copy_template(
+            templates / "web_common" / "docker-compose.yml",
+            project_dir / ".devcontainer" / "docker-compose.yml",
+        )
 
-    # -- Copy dev_mocks/ --
-    dev_mocks_src = templates / "dev_mocks"
-    for mock_file in dev_mocks_src.iterdir():
-        if mock_file.is_file():
-            _copy_template(mock_file, project_dir / "dev_mocks" / mock_file.name)
+        dev_mocks_src = templates / "dev_mocks"
+        for mock_file in dev_mocks_src.iterdir():
+            if mock_file.is_file():
+                _copy_template(mock_file, project_dir / "dev_mocks" / mock_file.name)
 
     # -- Append to .gitignore --
     gitignore = project_dir / ".gitignore"

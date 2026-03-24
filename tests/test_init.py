@@ -135,12 +135,28 @@ def test_get_templates_dir_has_common():
     assert (templates / "common").is_dir()
 
 
+def test_get_templates_dir_has_web_common():
+    """The web_common/ subdirectory contains web-framework-specific shared files."""
+    templates = _get_templates_dir()
+    assert (templates / "web_common").is_dir()
+    assert (templates / "web_common" / "app.py").is_file()
+    assert (templates / "web_common" / "devcontainer.json").is_file()
+    assert (templates / "web_common" / "docker-compose.yml").is_file()
+
+
 def test_get_templates_dir_has_frameworks():
     """Each supported framework has its own template subdirectory."""
     templates = _get_templates_dir()
     assert (templates / "streamlit").is_dir()
     assert (templates / "dash").is_dir()
     assert (templates / "fastapi").is_dir()
+
+
+def test_get_templates_dir_has_infra():
+    """The infra/ subdirectory contains the infrastructure-only template."""
+    templates = _get_templates_dir()
+    assert (templates / "infra").is_dir()
+    assert (templates / "infra" / "app.py").is_file()
 
 
 def test_get_templates_dir_has_codeowners_template():
@@ -414,3 +430,145 @@ def test_run_command_missing_arbitrary_binary(tmp_path, capsys):
     captured = capsys.readouterr()
     assert "totally-nonexistent-command-xyz" in captured.err
     assert "not installed" in captured.err
+
+
+# ---- run_init infra project type ----
+# Verifies that infra projects skip web-specific files and use the right template.
+
+
+def test_run_init_infra_skips_app_src(tmp_path, monkeypatch):
+    """Infra projects do not create an app_src/ directory."""
+    monkeypatch.chdir(tmp_path)
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-infra"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("infra", "test-infra", "3.13")
+
+    project_dir = tmp_path / "gds-idea-app-test-infra"
+    assert not (project_dir / "app_src").exists()
+
+
+def test_run_init_infra_skips_devcontainer(tmp_path, monkeypatch):
+    """Infra projects do not create a .devcontainer/ directory."""
+    monkeypatch.chdir(tmp_path)
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-infra"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("infra", "test-infra", "3.13")
+
+    project_dir = tmp_path / "gds-idea-app-test-infra"
+    assert not (project_dir / ".devcontainer").exists()
+
+
+def test_run_init_infra_skips_dev_mocks(tmp_path, monkeypatch):
+    """Infra projects do not create a dev_mocks/ directory."""
+    monkeypatch.chdir(tmp_path)
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-infra"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("infra", "test-infra", "3.13")
+
+    project_dir = tmp_path / "gds-idea-app-test-infra"
+    assert not (project_dir / "dev_mocks").exists()
+
+
+def test_run_init_infra_creates_ci_cd_files(tmp_path, monkeypatch):
+    """Infra projects still get CI/CD workflow files."""
+    monkeypatch.chdir(tmp_path)
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-infra"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("infra", "test-infra", "3.13")
+
+    project_dir = tmp_path / "gds-idea-app-test-infra"
+    assert (project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml").exists()
+    assert (project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml").exists()
+    assert (project_dir / ".github" / "CODEOWNERS").exists()
+    assert (project_dir / ".github" / "dependabot.yml").exists()
+
+
+def test_run_init_infra_uses_infra_app_template(tmp_path, monkeypatch):
+    """Infra projects use the infra/app.py template (bare stack, not WebApp)."""
+    monkeypatch.chdir(tmp_path)
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-infra"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("infra", "test-infra", "3.13")
+
+    project_dir = tmp_path / "gds-idea-app-test-infra"
+    app_py = project_dir / "app.py"
+    assert app_py.exists()
+    content = app_py.read_text()
+    assert "cdk.Stack(" in content
+    assert "WebApp" not in content
+
+
+def test_run_init_infra_checks_only_non_docker_prereqs(tmp_path, monkeypatch):
+    """Infra projects only check cdk, uv, git prerequisites (not Docker)."""
+    monkeypatch.chdir(tmp_path)
+
+    prereq_calls = []
+
+    def fake_check_prerequisites(only=None):
+        prereq_calls.append(only)
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-infra"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites", side_effect=fake_check_prerequisites),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("infra", "test-infra", "3.13")
+
+    assert len(prereq_calls) == 1
+    assert prereq_calls[0] == ["cdk", "uv", "git"]
