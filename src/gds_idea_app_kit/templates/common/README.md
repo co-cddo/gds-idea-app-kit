@@ -19,9 +19,10 @@ Make sure all tools and packages are up to date (check gds-idea-pypi (https://co
 2. Audit the repo — run idea-gh audit --fix. This ensures the repo has the right settings and branches (dev, prod).
 3. Grant deploy access — add your repo to the gds-idea-cdk-access repo. This permits deployment to dev/prod.
 4. Update templates — from the dev branch, run idea-app update to pull in the latest CI/CD files.
-5. Make sure you have tests in a tests/ folder (or placeholder), otherwise CI will fail.
-6. Feature PR → dev — raise a PR from your feature branch against dev. Anyone in the team can approve.
-7. Dev → prod PR — raise a PR from dev to prod. Requires approval from a senior data scientist.
+5. Make sure you have unit tests in a tests/ folder otherwise CI will fail. A simple test is fine but more is encouraged.
+6. Before raising any PR, bump the version in pyproject.toml, the CI version check will fail otherwise.
+7. Feature PR → dev — raise a PR from your feature branch against dev. Anyone in the team can approve.
+8. Dev → prod PR — raise a PR from dev to prod. Requires approval from a senior data scientist.
 
 ### How it works in practice
 - On PR to dev/prod: runs lint, tests, build, CDK diff. Fix and push again if any check fails. 
