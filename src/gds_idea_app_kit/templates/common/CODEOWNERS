@@ -1,0 +1,5 @@
+# Any changes to the ci/cd orchestrators will require approval from @gds-idea-senior-ds
+
+/.github/workflows/ci_cd_cdk_app.yml @gds-idea-senior-ds
+
+/.github/workflows/ci_pr_cdk_app.yml @gds-idea-senior-ds
