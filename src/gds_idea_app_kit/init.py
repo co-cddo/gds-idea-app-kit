@@ -204,7 +204,8 @@ def _write_webapp_config(project_dir: Path, app_name: str, framework: str) -> No
 def _write_pytest_config(project_dir: Path) -> None:
     """Write [tool.pytest.ini_options] to pyproject.toml.
 
-    Adds pythonpath = ["."] so pytest can import modules from the project root.
+    Adds pythonpath = ["."] so pytest can import modules from the project root,
+    and testpaths = ["tests"] to prevent pytest discovering app_src/tests/.
 
     Args:
         project_dir: The project root directory.
@@ -219,6 +220,7 @@ def _write_pytest_config(project_dir: Path) -> None:
     pytest_table = tomlkit.table()
     ini_options = tomlkit.table()
     ini_options.add("pythonpath", ["."])
+    ini_options.add("testpaths", ["tests"])
     pytest_table.add("ini_options", ini_options)
     config["tool"]["pytest"] = pytest_table
 
