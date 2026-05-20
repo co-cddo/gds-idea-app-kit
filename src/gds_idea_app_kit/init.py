@@ -201,6 +201,31 @@ def _write_webapp_config(project_dir: Path, app_name: str, framework: str) -> No
         tomlkit.dump(config, f)
 
 
+def _write_pytest_config(project_dir: Path) -> None:
+    """Write [tool.pytest.ini_options] to pyproject.toml.
+
+    Adds pythonpath = ["."] so pytest can import modules from the project root.
+
+    Args:
+        project_dir: The project root directory.
+    """
+    pyproject_path = project_dir / "pyproject.toml"
+    with open(pyproject_path) as f:
+        config = tomlkit.load(f)
+
+    if "tool" not in config:
+        config["tool"] = {}
+
+    pytest_table = tomlkit.table()
+    ini_options = tomlkit.table()
+    ini_options.add("pythonpath", ["."])
+    pytest_table.add("ini_options", ini_options)
+    config["tool"]["pytest"] = pytest_table
+
+    with open(pyproject_path, "w") as f:
+        tomlkit.dump(config, f)
+
+
 def run_init(framework: str, app_name: str, python_version: str) -> None:
     """Scaffold a new project.
 
@@ -388,6 +413,7 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     # -- Write [tool.webapp] config for AppConfig.from_pyproject() --
     click.echo("Writing project configuration...")
     _write_webapp_config(project_dir, app_name, framework)
+    _write_pytest_config(project_dir)
 
     # -- Build and write manifest --
     manifest = build_manifest(
