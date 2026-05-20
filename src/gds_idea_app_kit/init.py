@@ -201,6 +201,31 @@ def _write_webapp_config(project_dir: Path, app_name: str, framework: str) -> No
         tomlkit.dump(config, f)
 
 
+def _write_pytest_config(project_dir: Path) -> None:
+    """Write [tool.pytest.ini_options] to pyproject.toml.
+
+    Adds pythonpath = ["."] so pytest can import modules from the project root.
+
+    Args:
+        project_dir: The project root directory.
+    """
+    pyproject_path = project_dir / "pyproject.toml"
+    with open(pyproject_path) as f:
+        config = tomlkit.load(f)
+
+    if "tool" not in config:
+        config["tool"] = {}
+
+    pytest_table = tomlkit.table()
+    ini_options = tomlkit.table()
+    ini_options.add("pythonpath", ["."])
+    pytest_table.add("ini_options", ini_options)
+    config["tool"]["pytest"] = pytest_table
+
+    with open(pyproject_path, "w") as f:
+        tomlkit.dump(config, f)
+
+
 def run_init(framework: str, app_name: str, python_version: str) -> None:
     """Scaffold a new project.
 
@@ -297,6 +322,22 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
             variables=template_vars,
         )
 
+        # App test file
+        app_tests_dir = app_src / "tests"
+        app_tests_dir.mkdir(exist_ok=True)
+        _copy_template(
+            templates / framework / "test_app.py",
+            app_tests_dir / "test_app.py",
+        )
+
+    # -- Scaffold root tests directory --
+    tests_dir = project_dir / "tests"
+    tests_dir.mkdir(exist_ok=True)
+    _copy_template(
+        templates / "common" / "test_app_cdk.py",
+        tests_dir / "test_app.py",
+    )
+
     # -- Copy CI/CD workflow --
     _copy_template(
         templates / "common" / "ci_cd_cdk_app.yml",
@@ -377,9 +418,18 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         project_dir=project_dir,
     )
 
+    # -- Install dev dependencies --
+    click.echo("Installing dev dependencies...")
+    _run_command(
+        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
     # -- Write [tool.webapp] config for AppConfig.from_pyproject() --
     click.echo("Writing project configuration...")
     _write_webapp_config(project_dir, app_name, framework)
+    _write_pytest_config(project_dir)
 
     # -- Build and write manifest --
     manifest = build_manifest(

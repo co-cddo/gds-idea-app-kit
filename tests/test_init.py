@@ -211,7 +211,7 @@ def test_pyproject_template_has_gds_idea_index(framework):
 
 
 def test_run_init_cdk_install_is_split_into_two_calls(tmp_path, monkeypatch):
-    """run_init calls uv add twice for CDK deps — PyPI packages and internal package separately."""
+    """run_init calls uv add three times — PyPI packages, internal package, and dev deps."""
     monkeypatch.chdir(tmp_path)
 
     uv_add_calls = []
@@ -232,7 +232,7 @@ def test_run_init_cdk_install_is_split_into_two_calls(tmp_path, monkeypatch):
     ):
         run_init("streamlit", "test-app", "3.13")
 
-    assert len(uv_add_calls) == 2
+    assert len(uv_add_calls) == 3
 
 
 def test_run_init_first_uv_add_is_pypi_packages(tmp_path, monkeypatch):
@@ -289,6 +289,34 @@ def test_run_init_second_uv_add_uses_gds_idea_index(tmp_path, monkeypatch):
     assert "--index" in second
     assert any(GDS_IDEA_INDEX_URL in arg for arg in second)
     assert not any("git+ssh" in arg for arg in second)
+
+
+def test_run_init_third_uv_add_installs_dev_deps(tmp_path, monkeypatch):
+    """The third uv add installs pytest and ruff into the dev dependency group."""
+    monkeypatch.chdir(tmp_path)
+
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                '[project]\nname = "gds-idea-app-test-app"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("streamlit", "test-app", "3.13")
+
+    third = uv_add_calls[2]
+    assert "--group" in third
+    assert "dev" in third
+    assert any("pytest" in arg for arg in third)
+    assert any("ruff" in arg for arg in third)
 
 
 # ---- _apply_template_vars ----
