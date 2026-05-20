@@ -377,6 +377,14 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
         project_dir=project_dir,
     )
 
+    # -- Install dev dependencies --
+    click.echo("Installing dev dependencies...")
+    _run_command(
+        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
     # -- Write [tool.webapp] config for AppConfig.from_pyproject() --
     click.echo("Writing project configuration...")
     _write_webapp_config(project_dir, app_name, framework)
