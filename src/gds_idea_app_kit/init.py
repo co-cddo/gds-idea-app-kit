@@ -322,6 +322,22 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
             variables=template_vars,
         )
 
+        # App test file
+        app_tests_dir = app_src / "tests"
+        app_tests_dir.mkdir(exist_ok=True)
+        _copy_template(
+            templates / framework / "test_app.py",
+            app_tests_dir / "test_app.py",
+        )
+
+    # -- Scaffold root tests directory --
+    tests_dir = project_dir / "tests"
+    tests_dir.mkdir(exist_ok=True)
+    _copy_template(
+        templates / "common" / "test_app_cdk.py",
+        tests_dir / "test_app.py",
+    )
+
     # -- Copy CI/CD workflow --
     _copy_template(
         templates / "common" / "ci_cd_cdk_app.yml",
