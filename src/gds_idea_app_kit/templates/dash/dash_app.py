@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+from pathlib import Path
 
 from cognito_auth.dash import DashAuth
 from dash import Dash, Input, Output, dcc, html
@@ -19,6 +21,13 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)  # Flask logger
 
 # Your app logger
 logger = logging.getLogger(__name__)
+
+if os.getenv("COGNITO_AUTH_DEV_MODE", "").lower() == "true" and not os.getenv(
+    "COGNITO_AUTH_DEV_CONFIG"
+):
+    os.environ["COGNITO_AUTH_DEV_CONFIG"] = str(
+        Path(__file__).resolve().parent.parent / "dev_mocks" / "dev_mock_user.json"
+    )
 
 app = Dash(__name__)
 
