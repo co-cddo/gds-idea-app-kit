@@ -538,7 +538,7 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
     if "version" in config["project"]:
         del config["project"]["version"]
     config["project"]["dynamic"] = ["version"]
-    config["project"]["requires-python"] = f">={python_version}"
+    config["project"]["requires-python"] = ">=3.11"
     config["project"]["description"] = "TODO: add description"
     config["project"]["readme"] = "README.md"
 
@@ -572,6 +572,7 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
     ruff = tomlkit.table()
     ruff.add("line-length", 120)
     ruff.add("target-version", f"py{python_version.replace('.', '')}")
+    ruff.add("exclude", [f"src/{package_name}/_version.py"])
     ruff_lint = tomlkit.table()
     ruff_lint.add("select", ["E", "F", "I", "B", "UP", "N"])
     ruff.add("lint", ruff_lint)
@@ -621,14 +622,15 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
         templates / "python" / "ci.yml",
         project_dir / ".github" / "workflows" / "ci.yml",
     )
-    _copy_template(
-        templates / "python" / "auto_release.yml",
-        project_dir / ".github" / "workflows" / "auto-release.yml",
-    )
-    if not no_publish:
+    if no_publish:
         _copy_template(
-            templates / "python" / "gds_idea_pypi_publish.yml",
-            project_dir / ".github" / "workflows" / "gds-idea-pypi-publish.yml",
+            templates / "python" / "release_no_publish.yml",
+            project_dir / ".github" / "workflows" / "release.yml",
+        )
+    else:
+        _copy_template(
+            templates / "python" / "release.yml",
+            project_dir / ".github" / "workflows" / "release.yml",
         )
 
     # -- Copy CODEOWNERS --
@@ -722,13 +724,6 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
         project_dir=project_dir,
     )
 
-    # -- Create initial tag for hatch-vcs --
-    _run_command(
-        ["git", "tag", "v0.0.0", "-m", "Initial version (pre-release)"],
-        cwd=project_dir,
-        project_dir=project_dir,
-    )
-
     # -- Print next steps --
     click.echo()
     click.echo(f"Project created: {repo_name}/")
@@ -744,7 +739,7 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
     click.echo()
     click.echo("  # Or add a remote manually:")
     click.echo(f"  git remote add origin git@github.com:{GITHUB_ORG}/{repo_name}.git")
-    click.echo("  git push -u origin main --tags")
+    click.echo("  git push -u origin main")
     click.echo()
     click.echo("  # Check repo compliance at any time:")
     click.echo("  idea-gh audit")

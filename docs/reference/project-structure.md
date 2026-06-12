@@ -73,8 +73,7 @@ gds-idea-pkg-{name}/
 │   ├── dependabot.yml
 │   └── workflows/
 │       ├── ci.yml                  # Lint + test + build
-│       ├── auto-release.yml        # Tag + release on merge
-│       └── gds-idea-pypi-publish.yml  # Build + publish on release
+│       └── release.yml             # Tag + release + publish on merge
 ├── .gitignore
 ├── LICENCE
 ├── README.md

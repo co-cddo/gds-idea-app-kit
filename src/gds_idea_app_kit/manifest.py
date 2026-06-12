@@ -42,8 +42,7 @@ FRAMEWORK_OWNED_FILES = {
 # Files that `update` manages for Python package projects.
 PYTHON_OWNED_FILES = {
     "python/ci.yml": ".github/workflows/ci.yml",
-    "python/auto_release.yml": ".github/workflows/auto-release.yml",
-    "python/gds_idea_pypi_publish.yml": ".github/workflows/gds-idea-pypi-publish.yml",
+    "python/release.yml": ".github/workflows/release.yml",
     "python/CODEOWNERS.template": ".github/CODEOWNERS",
     "python/dependabot.yml": ".github/dependabot.yml",
     "python/pre-commit-config.yaml": ".pre-commit-config.yaml",

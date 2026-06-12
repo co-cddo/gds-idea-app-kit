@@ -59,8 +59,7 @@
 | File | Purpose |
 |---|---|
 | `.github/workflows/ci.yml` | CI orchestrator (lint, test, build) |
-| `.github/workflows/auto-release.yml` | Auto-release orchestrator |
-| `.github/workflows/gds-idea-pypi-publish.yml` | PyPI publish orchestrator |
+| `.github/workflows/release.yml` | Release + publish orchestrator |
 | `.github/CODEOWNERS` | Code review requirements |
 | `.github/dependabot.yml` | Dependency update configuration |
 | `.pre-commit-config.yaml` | Pre-commit hook configuration |

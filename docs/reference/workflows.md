@@ -36,9 +36,11 @@ Calls three reusable workflows:
 | `ci_pkg_test.yml` | Matrix test across Python 3.11, 3.12, 3.13, 3.14 with `pytest -m "not integration"` |
 | `ci_pkg_build.yml` | `uv build` with full git history (for hatch-vcs) |
 
-### `auto-release.yml` (push to main)
+### `release.yml` (push to main)
 
-Calls `auto_tag_release.yml`:
+A two-job workflow calling reusable workflows in sequence:
+
+**Job 1: release** — calls `auto_tag_release.yml`:
 
 1. Checks if HEAD already has a tag (skip if so)
 2. Reads labels from the merged PR
@@ -47,15 +49,17 @@ Calls `auto_tag_release.yml`:
     - `bump:minor` → minor bump
     - _(default)_ → patch bump
 4. Creates a git tag and GitHub release with auto-generated notes
+5. Outputs the tag name for the publish job
 
-### `gds-idea-pypi-publish.yml` (release published)
+**Job 2: publish** (only if a tag was created) — calls `gds_idea_pypi_publish.yml`:
 
-Calls `gds_idea_pypi_publish.yml`:
+1. Checks out the tagged commit
+2. Builds wheel and sdist with `uv build`
+3. Uploads artifacts to the GitHub release
+4. Generates a GitHub App token (if configured)
+5. Triggers a rebuild of the [gds-idea-pypi](https://co-cddo.github.io/gds-idea-pypi/) index
 
-1. Builds wheel and sdist with `uv build`
-2. Uploads artifacts to the GitHub release
-3. Generates a GitHub App token (if configured)
-4. Triggers a rebuild of the [gds-idea-pypi](https://co-cddo.github.io/gds-idea-pypi/) index
+If `--no-publish` was used during scaffold, only the release job is present.
 
 ## Workflow catalogue
 

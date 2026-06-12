@@ -119,7 +119,7 @@ git checkout -b feat/my-feature
 
 ## CI/CD workflows
 
-The scaffolded project has three workflows:
+The scaffolded project has two workflows:
 
 ### `ci.yml` (on pull requests to main)
 
@@ -129,13 +129,14 @@ Calls reusable workflows from the shared catalogue:
 - **Test** — pytest across Python 3.11, 3.12, 3.13, 3.14
 - **Build** — `uv build` to verify the package builds
 
-### `auto-release.yml` (on push to main)
+### `release.yml` (on push to main)
 
-Creates a git tag and GitHub release based on PR labels.
+A two-job workflow:
 
-### `gds-idea-pypi-publish.yml` (on release published)
+1. **release** — computes next version from PR labels, creates git tag + GitHub release
+2. **publish** — builds wheel/sdist, uploads to the release, triggers gds-idea-pypi index rebuild
 
-Builds the wheel, uploads to the GitHub release, and triggers a rebuild of the gds-idea-pypi index.
+If you used `--no-publish`, only the release job is present.
 
 ## Adding dependencies
 
@@ -156,8 +157,7 @@ gds-idea-pkg-{name}/
 │   ├── dependabot.yml
 │   └── workflows/
 │       ├── ci.yml
-│       ├── auto-release.yml
-│       └── gds-idea-pypi-publish.yml
+│       └── release.yml
 ├── .gitignore
 ├── .pre-commit-config.yaml
 ├── LICENCE
