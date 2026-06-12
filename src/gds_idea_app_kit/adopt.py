@@ -72,7 +72,7 @@ def _run_adopt_cdk(project_dir: Path) -> None:
     # Strip the repo prefix if present to get the app name.
     prefix = f"{REPO_PREFIX}-"
     if project_name.startswith(prefix):
-        app_name = project_name[len(prefix):]
+        app_name = project_name[len(prefix) :]
     else:
         app_name = project_name
 
@@ -319,7 +319,7 @@ def _run_adopt_python(project_dir: Path, no_publish: bool) -> None:
     # Strip the pkg repo prefix if present to get the app name.
     prefix = f"{PKG_REPO_PREFIX}-"
     if project_name.startswith(prefix):
-        app_name = project_name[len(prefix):]
+        app_name = project_name[len(prefix) :]
     else:
         app_name = project_name
 
