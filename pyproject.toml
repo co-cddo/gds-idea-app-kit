@@ -1,10 +1,9 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "gds-idea-app-kit"
-version = "0.5.1"
 description = "CLI tool for scaffolding and maintaining GDS IDEA CDK projects on AWS"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,6 +12,7 @@ dependencies = [
     "tomlkit>=0.12.0",
     "boto3>=1.26.0",
 ]
+dynamic = ["version"]
 
 [project.scripts]
 idea-app = "gds_idea_app_kit.cli:cli"
@@ -21,16 +21,35 @@ idea_app = "gds_idea_app_kit.cli:cli"
 [tool.hatch.build.targets.wheel]
 packages = ["src/gds_idea_app_kit"]
 
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/gds_idea_app_kit/_version.py"
 [tool.hatch.build]
 include = [
     "src/gds_idea_app_kit/**/*.py",
     "src/gds_idea_app_kit/templates/**",
 ]
 
+[tool.hatch.version]
+source = "vcs"
+
+[tool.gds-idea-app-kit]
+framework = "python"
+app_name = "gds-idea-app-kit"
+tool_version = "0.5.1"
+
+[tool.gds-idea-app-kit.files]
+LICENCE = "sha256:21cc325b3181cb748845827425d37ce04b3dc563835bbf50fafbc56a5eb68c48"
+".github/CODEOWNERS" = "sha256:464aa53eb8be8c9b61185674b4dabec6cacbafa904aa48b46facdcd9a18e1fc5"
+".github/workflows/ci.yml" = "sha256:baed13493483724c4f2cdec0df9d378dfc2f8df8a0f01bfb65a108c9d7af3d29"
+".github/dependabot.yml" = "sha256:8472c537c3808394c9200ac7f67e61ce565981583c6f7f381339f1df255fb318"
+".pre-commit-config.yaml" = "sha256:376617ea56a3e3b6691e423e33c1faeff299e95205c54208bbd3b3a5c619bd57"
+".github/workflows/release.yml" = "sha256:9f0252542002155aa15a6811081f44111a1b9b35129dafee159b85a97071172c"
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
-    "ruff>=0.8.0",
+    "pre-commit>=4.6.0",
+    "pytest>=9.0.0",
+    "ruff>=0.14.0",
 ]
 docs = [
     "mkdocs-material>=9.0",
