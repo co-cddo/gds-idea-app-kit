@@ -13,6 +13,9 @@ GITHUB_ORG = "co-cddo"
 # Prefix applied to all generated project directories: gds-idea-app-{name}
 REPO_PREFIX = "gds-idea-app"
 
+# Prefix applied to generated Python package project directories: gds-idea-pkg-{name}
+PKG_REPO_PREFIX = "gds-idea-pkg"
+
 # Web frameworks that produce a containerised web app with devcontainer and
 # dev-mock support.  The "infra" project type is infrastructure-only and
 # skips all of these extras.
