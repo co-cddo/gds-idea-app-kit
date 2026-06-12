@@ -1,0 +1,45 @@
+site_name: idea-app
+site_description: CLI tool for scaffolding and maintaining GDS IDEA projects on AWS
+site_url: https://co-cddo.github.io/gds-idea-app-kit/
+repo_url: https://github.com/co-cddo/gds-idea-app-kit
+repo_name: co-cddo/gds-idea-app-kit
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - navigation.footer
+
+nav:
+  - Home: index.md
+  - Commands:
+      - init: commands/init.md
+      - update: commands/update.md
+      - smoke-test: commands/smoke-test.md
+      - provide-role: commands/provide-role.md
+      - migrate: commands/migrate.md
+      - adopt: commands/adopt.md
+  - Guides:
+      - Getting started: guides/getting-started.md
+      - Python packages: guides/python-packages.md
+      - Keeping up to date: guides/keeping-up-to-date.md
+  - Reference:
+      - File ownership: reference/file-ownership.md
+      - Project structure: reference/project-structure.md
+      - CI/CD workflows: reference/workflows.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - tables
