@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gds-idea-app-kit"
-version = "0.4.3"
+version = "0.5.0"
 description = "CLI tool for scaffolding and maintaining GDS IDEA CDK projects on AWS"
 readme = "README.md"
 requires-python = ">=3.11"
