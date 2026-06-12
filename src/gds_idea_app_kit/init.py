@@ -17,6 +17,7 @@ import tomlkit
 
 from gds_idea_app_kit import (
     GITHUB_ORG,
+    PKG_REPO_PREFIX,
     REPO_PREFIX,
     WEB_FRAMEWORKS,
     __version__,
@@ -228,19 +229,26 @@ def _write_pytest_config(project_dir: Path) -> None:
         tomlkit.dump(config, f)
 
 
-def run_init(framework: str, app_name: str, python_version: str) -> None:
+def run_init(framework: str, app_name: str, python_version: str, no_publish: bool = False) -> None:
     """Scaffold a new project.
 
     Creates a fully configured CDK project.  For web frameworks (streamlit,
     dash, fastapi) this includes a containerised app with devcontainer and
     dev-mock support.  For "infra" projects, only CDK infrastructure scaffolding
-    and common CI/CD files are created.
+    and common CI/CD files are created.  For "python" projects, a pure Python
+    package with src/ layout and hatch-vcs is created.
 
     Args:
-        framework: The project type (streamlit, dash, fastapi, or infra).
+        framework: The project type (streamlit, dash, fastapi, infra, or python).
         app_name: Name for the application.
         python_version: Python version for the project.
+        no_publish: If True, skip the gds-idea-pypi publish workflow (python only).
     """
+    # Dispatch to dedicated handler for python package projects
+    if framework == "python":
+        _run_init_python(app_name, python_version, no_publish)
+        return
+
     is_web = framework in WEB_FRAMEWORKS
 
     # -- Validate inputs --
@@ -468,3 +476,269 @@ def run_init(framework: str, app_name: str, python_version: str) -> None:
     click.echo("  # Or add a remote manually:")
     click.echo(f"  git remote add origin git@github.com:{GITHUB_ORG}/{repo_name}.git")
     click.echo("  git push -u origin main")
+
+
+def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> None:
+    """Scaffold a pure Python package project with hatch-vcs versioning.
+
+    Creates a src-layout package with hatchling build system, hatch-vcs for
+    tag-based versioning, pre-commit hooks (ruff + gitleaks), and CI/CD
+    workflows that call the gds-idea-workflows-catalogue.
+
+    Args:
+        app_name: Name for the package (used as gds-idea-pkg-{name}).
+        python_version: Python version for the project.
+        no_publish: If True, skip the gds-idea-pypi publish workflow.
+    """
+    # -- Validate inputs --
+    app_name = _sanitize_app_name(app_name)
+    repo_name = f"{PKG_REPO_PREFIX}-{app_name}"
+    package_name = app_name.replace("-", "_")
+    project_dir = Path.cwd() / repo_name
+
+    if project_dir.exists():
+        click.echo(f"Error: Directory already exists: {project_dir}", err=True)
+        sys.exit(1)
+
+    # -- Check tool is current --
+    check_tool_is_current()
+
+    # -- Check prerequisites (only uv, git, gitleaks needed) --
+    check_prerequisites(only=["uv", "git", "gitleaks"])
+
+    click.echo(f"Scaffolding python package: {app_name}")
+    click.echo(f"  Directory: {repo_name}/")
+    click.echo(f"  Package: {package_name}")
+    click.echo(f"  Python: {python_version}")
+    click.echo()
+
+    # -- Run uv init --lib (creates src/ layout with hatchling) --
+    project_dir.mkdir()
+    click.echo("Running uv init...")
+    _run_command(
+        ["uv", "init", "--lib", "--no-workspace", "--build-backend", "hatch"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Delete uv-generated files we'll replace --
+    for name in ("README.md", ".python-version"):
+        path = project_dir / name
+        if path.exists():
+            path.unlink()
+
+    # -- Configure pyproject.toml with hatch-vcs and tooling --
+    click.echo("Configuring pyproject.toml...")
+    pyproject_path = project_dir / "pyproject.toml"
+    with open(pyproject_path) as f:
+        config = tomlkit.load(f)
+
+    # Project metadata
+    config["project"]["name"] = repo_name
+    if "version" in config["project"]:
+        del config["project"]["version"]
+    config["project"]["dynamic"] = ["version"]
+    config["project"]["requires-python"] = f">={python_version}"
+    config["project"]["description"] = "TODO: add description"
+    config["project"]["readme"] = "README.md"
+
+    # Build system - add hatch-vcs
+    config["build-system"]["requires"] = ["hatchling", "hatch-vcs"]
+
+    # Hatch version config
+    if "tool" not in config:
+        config["tool"] = {}
+
+    hatch_version = tomlkit.table()
+    hatch_version.add("source", "vcs")
+    config["tool"]["hatch"] = {"version": hatch_version}
+
+    hatch_build = tomlkit.table()
+    hooks_vcs = tomlkit.table()
+    hooks_vcs.add("version-file", f"src/{package_name}/_version.py")
+    hooks_table = tomlkit.table()
+    hooks_table.add("vcs", hooks_vcs)
+    hatch_build.add("hooks", hooks_table)
+
+    targets_wheel = tomlkit.table()
+    targets_wheel.add("packages", [f"src/{package_name}"])
+    targets_table = tomlkit.table()
+    targets_table.add("wheel", targets_wheel)
+    hatch_build.add("targets", targets_table)
+
+    config["tool"]["hatch"]["build"] = hatch_build
+
+    # Ruff config
+    ruff = tomlkit.table()
+    ruff.add("line-length", 120)
+    ruff.add("target-version", f"py{python_version.replace('.', '')}")
+    ruff_lint = tomlkit.table()
+    ruff_lint.add("select", ["E", "F", "I", "B", "UP", "N"])
+    ruff.add("lint", ruff_lint)
+    ruff_isort = tomlkit.table()
+    ruff_isort.add("known-first-party", [package_name])
+    ruff["lint"].add("isort", ruff_isort)
+    config["tool"]["ruff"] = ruff
+
+    # Pytest config
+    pytest_table = tomlkit.table()
+    ini_options = tomlkit.table()
+    ini_options.add("testpaths", ["tests"])
+    ini_options.add("addopts", ["-ra", "--strict-markers", "--strict-config"])
+    ini_options.add(
+        "markers",
+        ["integration: tests that require external services"],
+    )
+    pytest_table.add("ini_options", ini_options)
+    config["tool"]["pytest"] = pytest_table
+
+    with open(pyproject_path, "w") as f:
+        tomlkit.dump(config, f)
+
+    # -- Replace __init__.py with our template --
+    click.echo("Copying template files...")
+    templates = _get_templates_dir()
+    template_vars = {
+        "app_name": app_name,
+        "python_version": python_version,
+        "year": str(datetime.now().year),
+    }
+
+    init_py = project_dir / "src" / package_name / "__init__.py"
+    _copy_template(
+        templates / "python" / "__init__.py.template",
+        init_py,
+        variables=template_vars,
+    )
+
+    # -- Delete py.typed (can add later if needed) --
+    py_typed = project_dir / "src" / package_name / "py.typed"
+    if py_typed.exists():
+        py_typed.unlink()
+
+    # -- Copy workflow files --
+    _copy_template(
+        templates / "python" / "ci.yml",
+        project_dir / ".github" / "workflows" / "ci.yml",
+    )
+    _copy_template(
+        templates / "python" / "auto_release.yml",
+        project_dir / ".github" / "workflows" / "auto-release.yml",
+    )
+    if not no_publish:
+        _copy_template(
+            templates / "python" / "gds_idea_pypi_publish.yml",
+            project_dir / ".github" / "workflows" / "gds-idea-pypi-publish.yml",
+        )
+
+    # -- Copy CODEOWNERS --
+    _copy_template(
+        templates / "python" / "CODEOWNERS.template",
+        project_dir / ".github" / "CODEOWNERS",
+    )
+
+    # -- Copy Dependabot config --
+    _copy_template(
+        templates / "python" / "dependabot.yml",
+        project_dir / ".github" / "dependabot.yml",
+    )
+
+    # -- Copy .pre-commit-config.yaml --
+    _copy_template(
+        templates / "python" / "pre-commit-config.yaml",
+        project_dir / ".pre-commit-config.yaml",
+    )
+
+    # -- Copy .gitignore (replace uv-generated one) --
+    _copy_template(
+        templates / "python" / "gitignore",
+        project_dir / ".gitignore",
+    )
+
+    # -- Copy LICENCE --
+    _copy_template(
+        templates / "common" / "LICENCE",
+        project_dir / "LICENCE",
+        variables=template_vars,
+    )
+
+    # -- Copy README --
+    _copy_template(
+        templates / "python" / "README.md.template",
+        project_dir / "README.md",
+        variables=template_vars,
+    )
+
+    # -- Create tests directory --
+    tests_dir = project_dir / "tests"
+    tests_dir.mkdir(exist_ok=True)
+    (tests_dir / "__init__.py").write_text("")
+    _copy_template(
+        templates / "python" / "conftest.py",
+        tests_dir / "conftest.py",
+    )
+
+    # -- Install dev dependencies --
+    click.echo("Installing dev dependencies...")
+    _run_command(
+        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0", "pre-commit"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Sync dependencies --
+    click.echo("Syncing dependencies...")
+    _run_command(["uv", "sync"], cwd=project_dir, project_dir=project_dir)
+
+    # -- Install pre-commit hooks --
+    click.echo("Installing pre-commit hooks...")
+    _run_command(
+        ["uv", "run", "pre-commit", "install"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Build and write manifest --
+    manifest = build_manifest(
+        framework="python",
+        app_name=app_name,
+        tool_version=__version__,
+        project_dir=project_dir,
+    )
+    write_manifest(project_dir, manifest)
+
+    # -- Initial git commit --
+    click.echo("Creating initial commit...")
+    _run_command(["git", "add", "."], cwd=project_dir, project_dir=project_dir)
+    _run_command(
+        [
+            "git",
+            "commit",
+            "-m",
+            f"Initial scaffold (python, Python {python_version})",
+            "--no-verify",
+        ],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Create initial tag for hatch-vcs --
+    _run_command(
+        ["git", "tag", "v0.0.0", "-m", "Initial version (pre-release)"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Print next steps --
+    click.echo()
+    click.echo(f"Project created: {repo_name}/")
+    click.echo()
+    click.echo("Next steps:")
+    click.echo(f"  cd {repo_name}")
+    click.echo()
+    click.echo("  # Create the GitHub repo (requires gh CLI):")
+    click.echo(f"  gh repo create {GITHUB_ORG}/{repo_name} --private --source . --push")
+    click.echo()
+    click.echo("  # Or add a remote manually:")
+    click.echo(f"  git remote add origin git@github.com:{GITHUB_ORG}/{repo_name}.git")
+    click.echo("  git push -u origin main --tags")
