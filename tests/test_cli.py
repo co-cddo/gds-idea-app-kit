@@ -303,4 +303,12 @@ def test_adopt_runs(cli_runner):
     with patch("gds_idea_app_kit.adopt.run_adopt") as mock:
         result = cli_runner.invoke(cli, ["adopt"])
     assert result.exit_code == 0
-    mock.assert_called_once_with()
+    mock.assert_called_once_with(no_publish=False)
+
+
+def test_adopt_no_publish_flag(cli_runner):
+    """adopt --no-publish passes the flag through."""
+    with patch("gds_idea_app_kit.adopt.run_adopt") as mock:
+        result = cli_runner.invoke(cli, ["adopt", "--no-publish"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with(no_publish=True)

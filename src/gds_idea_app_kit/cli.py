@@ -98,8 +98,13 @@ def migrate():
 
 
 @cli.command()
-def adopt():
-    """Add CI/CD and config to an existing CDK project."""
+@click.option(
+    "--no-publish",
+    is_flag=True,
+    help="Skip the gds-idea-pypi publish workflow (python packages only).",
+)
+def adopt(no_publish: bool):
+    """Add CI/CD and config to an existing project (CDK or Python package)."""
     from gds_idea_app_kit.adopt import run_adopt
 
-    run_adopt()
+    run_adopt(no_publish=no_publish)
