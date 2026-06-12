@@ -22,6 +22,7 @@ PREREQUISITES: list[tuple[str, list[str], str, str | None]] = [
         "brew install docker-compose",
         "https://github.com/co-cddo/gds-idea-app-kit#docker-compose-not-found--unknown-shorthand-flag--f",
     ),
+    ("gitleaks", ["gitleaks", "version"], "brew install gitleaks", None),
 ]
 
 
