@@ -38,16 +38,25 @@ def test_adopt_fails_without_pyproject(tmp_path, capsys):
     assert "No pyproject.toml" in captured.err
 
 
-def test_adopt_fails_without_cdk_json(tmp_path, capsys):
-    """adopt exits with an error when no cdk.json exists."""
+def test_adopt_without_cdk_json_takes_python_path(tmp_path, capsys):
+    """adopt without cdk.json triggers the Python package path."""
     os.chdir(tmp_path)
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "test"\n')
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "gds-idea-pkg-test"\nversion = "0.1.0"\n\n'
+        "[build-system]\n"
+        'requires = ["hatchling"]\n'
+        'build-backend = "hatchling.build"\n'
+    )
 
-    with pytest.raises(SystemExit):
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
         run_adopt()
 
     captured = capsys.readouterr()
-    assert "No cdk.json" in captured.err
+    assert "Adopting Python package: test" in captured.out
 
 
 def test_adopt_fails_with_existing_manifest(cdk_project, capsys):
@@ -265,3 +274,216 @@ def test_adopt_does_not_auto_commit(cdk_project):
 
     # No git add or git commit calls
     assert not any("commit" in cmd for cmd in git_calls)
+
+
+# ---- Python package adopt ----
+
+
+@pytest.fixture()
+def python_project(tmp_path):
+    """Create a minimal existing Python package directory."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(
+        "[project]\n"
+        'name = "gds-idea-pkg-mylib"\n'
+        'version = "0.2.0"\n'
+        'requires-python = ">=3.11"\n\n'
+        "[build-system]\n"
+        'requires = ["hatchling"]\n'
+        'build-backend = "hatchling.build"\n'
+    )
+    gitignore = tmp_path / ".gitignore"
+    gitignore.write_text("*.pyc\n__pycache__/\n")
+    return tmp_path
+
+
+def test_adopt_python_creates_workflows(python_project):
+    """adopt creates CI and release workflow files for Python packages."""
+    os.chdir(python_project)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    assert (python_project / ".github" / "workflows" / "ci.yml").exists()
+    assert (python_project / ".github" / "workflows" / "release.yml").exists()
+    assert (python_project / ".github" / "CODEOWNERS").exists()
+    assert (python_project / ".github" / "dependabot.yml").exists()
+    assert (python_project / ".pre-commit-config.yaml").exists()
+    assert (python_project / "LICENCE").exists()
+
+
+def test_adopt_python_writes_manifest(python_project):
+    """adopt writes a manifest with framework='python'."""
+    os.chdir(python_project)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    manifest = read_manifest(python_project)
+    assert manifest["framework"] == "python"
+    assert manifest["app_name"] == "mylib"
+
+
+def test_adopt_python_strips_pkg_prefix(python_project):
+    """adopt strips the gds-idea-pkg- prefix to derive app_name."""
+    os.chdir(python_project)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    manifest = read_manifest(python_project)
+    assert manifest["app_name"] == "mylib"
+
+
+def test_adopt_python_adds_hatch_vcs(python_project):
+    """adopt adds hatch-vcs configuration to pyproject.toml."""
+    os.chdir(python_project)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    import tomlkit
+
+    with open(python_project / "pyproject.toml") as f:
+        config = tomlkit.load(f)
+
+    # hatch-vcs in build requires
+    assert "hatch-vcs" in config["build-system"]["requires"]
+    # static version removed, dynamic added
+    assert "version" not in config["project"]
+    assert "version" in config["project"].get("dynamic", [])
+    # hatch version source
+    assert config["tool"]["hatch"]["version"]["source"] == "vcs"
+
+
+def test_adopt_python_skips_existing_ruff(python_project, capsys):
+    """adopt skips [tool.ruff] if already present."""
+    os.chdir(python_project)
+
+    # Add existing ruff config
+    pyproject = python_project / "pyproject.toml"
+    content = pyproject.read_text()
+    content += "\n[tool.ruff]\nline-length = 88\n"
+    pyproject.write_text(content)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    captured = capsys.readouterr()
+    assert "Skipping [tool.ruff]" in captured.out
+
+    # Original config preserved
+    import tomlkit
+
+    with open(pyproject) as f:
+        config = tomlkit.load(f)
+    assert config["tool"]["ruff"]["line-length"] == 88
+
+
+def test_adopt_python_skips_existing_hatch_vcs(python_project, capsys):
+    """adopt skips hatch-vcs setup if already configured."""
+    os.chdir(python_project)
+
+    # Add hatch-vcs to build-system requires
+    pyproject = python_project / "pyproject.toml"
+    pyproject.write_text(
+        "[project]\n"
+        'name = "gds-idea-pkg-mylib"\n'
+        'dynamic = ["version"]\n'
+        'requires-python = ">=3.11"\n\n'
+        "[build-system]\n"
+        'requires = ["hatchling", "hatch-vcs"]\n'
+        'build-backend = "hatchling.build"\n'
+    )
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    captured = capsys.readouterr()
+    assert "Skipping hatch-vcs" in captured.out
+
+
+def test_adopt_python_no_publish_flag(python_project):
+    """adopt --no-publish uses the release_no_publish template."""
+    os.chdir(python_project)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt(no_publish=True)
+
+    release_yml = python_project / ".github" / "workflows" / "release.yml"
+    content = release_yml.read_text()
+    # The no-publish variant should NOT contain gds_idea_pypi_publish
+    assert "gds_idea_pypi_publish" not in content
+
+
+def test_adopt_python_installs_dev_deps(python_project):
+    """adopt installs pytest, ruff, and pre-commit as dev dependencies."""
+    os.chdir(python_project)
+
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", side_effect=fake_run_command),
+    ):
+        run_adopt()
+
+    assert len(uv_add_calls) == 1
+    cmd = uv_add_calls[0]
+    assert "--group" in cmd
+    assert "dev" in cmd
+    assert any("pytest" in arg for arg in cmd)
+    assert any("ruff" in arg for arg in cmd)
+    assert "pre-commit" in cmd
+
+
+def test_adopt_python_skips_existing_readme(python_project, capsys):
+    """adopt does not overwrite an existing README.md for Python packages."""
+    os.chdir(python_project)
+    readme = python_project / "README.md"
+    readme.write_text("# My library\n")
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    assert readme.read_text() == "# My library\n"
+    captured = capsys.readouterr()
+    assert "Skipping README.md" in captured.out
