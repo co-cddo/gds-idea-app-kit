@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_lint.yml@main
+
+  test:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_test.yml@main
+
+  build:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_build.yml@main
