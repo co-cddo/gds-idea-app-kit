@@ -39,7 +39,9 @@ def test_init_help_shows_options(cli_runner):
     assert "dash" in result.output
     assert "fastapi" in result.output
     assert "infra" in result.output
+    assert "python" in result.output
     assert "--python" in result.output
+    assert "--no-publish" in result.output
     assert DEFAULT_PYTHON_VERSION in result.output
 
 
@@ -50,7 +52,10 @@ def test_init_valid_framework(cli_runner, framework):
         result = cli_runner.invoke(cli, ["init", framework, "my-app"])
     assert result.exit_code == 0
     mock.assert_called_once_with(
-        framework=framework, app_name="my-app", python_version=DEFAULT_PYTHON_VERSION
+        framework=framework,
+        app_name="my-app",
+        python_version=DEFAULT_PYTHON_VERSION,
+        no_publish=False,
     )
 
 
@@ -59,7 +64,9 @@ def test_init_custom_python_version(cli_runner):
     with patch("gds_idea_app_kit.init.run_init") as mock:
         result = cli_runner.invoke(cli, ["init", "streamlit", "my-app", "--python", "3.12"])
     assert result.exit_code == 0
-    mock.assert_called_once_with(framework="streamlit", app_name="my-app", python_version="3.12")
+    mock.assert_called_once_with(
+        framework="streamlit", app_name="my-app", python_version="3.12", no_publish=False
+    )
 
 
 def test_init_default_python_version(cli_runner):
@@ -68,7 +75,10 @@ def test_init_default_python_version(cli_runner):
         result = cli_runner.invoke(cli, ["init", "streamlit", "my-app"])
     assert result.exit_code == 0
     mock.assert_called_once_with(
-        framework="streamlit", app_name="my-app", python_version=DEFAULT_PYTHON_VERSION
+        framework="streamlit",
+        app_name="my-app",
+        python_version=DEFAULT_PYTHON_VERSION,
+        no_publish=False,
     )
 
 
@@ -76,6 +86,32 @@ def test_init_invalid_framework(cli_runner):
     result = cli_runner.invoke(cli, ["init", "flask", "my-app"])
     assert result.exit_code != 0
     assert "Invalid value" in result.output
+
+
+def test_init_python_framework(cli_runner):
+    """init python passes correct args to run_init."""
+    with patch("gds_idea_app_kit.init.run_init") as mock:
+        result = cli_runner.invoke(cli, ["init", "python", "my-lib"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with(
+        framework="python",
+        app_name="my-lib",
+        python_version=DEFAULT_PYTHON_VERSION,
+        no_publish=False,
+    )
+
+
+def test_init_no_publish_flag(cli_runner):
+    """init --no-publish passes no_publish=True to run_init."""
+    with patch("gds_idea_app_kit.init.run_init") as mock:
+        result = cli_runner.invoke(cli, ["init", "python", "my-lib", "--no-publish"])
+    assert result.exit_code == 0
+    mock.assert_called_once_with(
+        framework="python",
+        app_name="my-lib",
+        python_version=DEFAULT_PYTHON_VERSION,
+        no_publish=True,
+    )
 
 
 def test_init_missing_app_name(cli_runner):

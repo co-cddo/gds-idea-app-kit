@@ -1,0 +1,21 @@
+name: Release & Publish
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/auto_tag_release.yml@main
+    secrets: inherit
+
+  publish:
+    needs: release
+    if: ${{ needs.release.outputs.tag != '' }}
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/gds_idea_pypi_publish.yml@main
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit

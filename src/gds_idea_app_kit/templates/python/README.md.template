@@ -1,0 +1,84 @@
+# gds-idea-pkg-{{app_name}}
+
+_Brief description of your package._
+
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/) for Python package management
+- [git](https://git-scm.com/)
+- [gitleaks](https://github.com/gitleaks/gitleaks) for pre-commit secret scanning (`brew install gitleaks`)
+
+## Getting started
+
+1. Clone the repository:
+
+   ```bash
+   git clone git@github.com:co-cddo/gds-idea-pkg-{{app_name}}.git
+   cd gds-idea-pkg-{{app_name}}
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   uv sync
+   ```
+
+3. Set up pre-commit hooks:
+
+   ```bash
+   uv run pre-commit install
+   ```
+
+   This is done automatically when the project is first scaffolded.
+   Pre-commit runs [ruff](https://docs.astral.sh/ruff/) on every commit
+   to auto-fix lint issues and enforce formatting.
+
+## Development
+
+### Running tests
+
+```bash
+uv run pytest
+```
+
+### Running linting manually
+
+```bash
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
+```
+
+### Pre-commit hooks
+
+Pre-commit hooks run automatically on `git commit`. They will:
+
+- **Auto-fix** lint issues detected by `ruff check --fix`
+- **Auto-format** code with `ruff format`
+- **Check** YAML/TOML syntax, trailing whitespace, merge conflicts
+- **Scan** for leaked secrets with gitleaks
+- **Prevent** direct commits to `main`
+
+If files are modified by the hooks, the commit will be aborted.
+Review the changes, `git add` them, and commit again.
+
+To run hooks against all files manually:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+## Versioning
+
+This project uses [hatch-vcs](https://github.com/ofek/hatch-vcs) for
+automatic versioning from git tags. Versions are never set manually.
+
+On merge to `main`, the auto-release workflow creates a new tag based on
+PR labels:
+
+- `bump:major` — major version bump
+- `bump:minor` — minor version bump
+- (default) — patch version bump
+
+## Licence
+
+[MIT License](LICENCE)

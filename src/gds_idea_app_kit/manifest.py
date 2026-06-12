@@ -39,6 +39,16 @@ FRAMEWORK_OWNED_FILES = {
     "Dockerfile": "app_src/Dockerfile",
 }
 
+# Files that `update` manages for Python package projects.
+PYTHON_OWNED_FILES = {
+    "python/ci.yml": ".github/workflows/ci.yml",
+    "python/release.yml": ".github/workflows/release.yml",
+    "python/CODEOWNERS.template": ".github/CODEOWNERS",
+    "python/dependabot.yml": ".github/dependabot.yml",
+    "python/pre-commit-config.yaml": ".pre-commit-config.yaml",
+    "common/LICENCE": "LICENCE",
+}
+
 
 def hash_file(path: Path) -> str:
     """Compute SHA256 hash of a file.
@@ -58,11 +68,14 @@ def get_tracked_files(framework: str) -> dict[str, str]:
     """Get the full mapping of template source -> project destination for a framework.
 
     Args:
-        framework: The project type (streamlit, dash, fastapi, or infra).
+        framework: The project type (streamlit, dash, fastapi, infra, or python).
 
     Returns:
         Dict mapping template source paths to project destination paths.
     """
+    if framework == "python":
+        return dict(PYTHON_OWNED_FILES)
+
     files = dict(TOOL_OWNED_FILES)
     if framework in WEB_FRAMEWORKS:
         files.update(WEB_OWNED_FILES)

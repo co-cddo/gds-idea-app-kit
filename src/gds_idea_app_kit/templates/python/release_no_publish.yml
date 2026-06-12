@@ -1,0 +1,13 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/auto_tag_release.yml@main
+    secrets: inherit

@@ -27,7 +27,7 @@ def cli():
 
 
 @cli.command()
-@click.argument("framework", type=click.Choice(["streamlit", "dash", "fastapi", "infra"]))
+@click.argument("framework", type=click.Choice(["streamlit", "dash", "fastapi", "infra", "python"]))
 @click.argument("app_name")
 @click.option(
     "--python",
@@ -36,11 +36,21 @@ def cli():
     show_default=True,
     help="Python version for the project.",
 )
-def init(framework: str, app_name: str, python_version: str):
-    """Scaffold a new project: idea-app init <framework|infra> <app-name>."""
+@click.option(
+    "--no-publish",
+    is_flag=True,
+    help="Skip the gds-idea-pypi publish workflow (python projects only).",
+)
+def init(framework: str, app_name: str, python_version: str, no_publish: bool):
+    """Scaffold a new project: idea-app init <framework|infra|python> <app-name>."""
     from gds_idea_app_kit.init import run_init
 
-    run_init(framework=framework, app_name=app_name, python_version=python_version)
+    run_init(
+        framework=framework,
+        app_name=app_name,
+        python_version=python_version,
+        no_publish=no_publish,
+    )
 
 
 @cli.command()
