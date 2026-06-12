@@ -612,13 +612,20 @@ def _make_fake_run_command_python(project_name):
 
     def fake_run_command(cmd, cwd, project_dir=None):
         if cmd[:2] == ["uv", "init"]:
-            # Simulate uv init --lib creating src/ layout
+            # Simulate uv init --lib --name creating src/ layout
             (cwd / "pyproject.toml").write_text(
                 f'[project]\nname = "{project_name}"\nversion = "0.1.0"\n\n'
                 '[build-system]\nrequires = ["hatchling"]\n'
                 'build-backend = "hatchling.build"\n'
             )
-            pkg_name = project_name.split("-")[-1].replace("-", "_")
+            # --name flag means package dir is derived from the name arg
+            # e.g. --name test-lib -> src/test_lib/
+            name_arg = None
+            for i, arg in enumerate(cmd):
+                if arg == "--name" and i + 1 < len(cmd):
+                    name_arg = cmd[i + 1]
+                    break
+            pkg_name = (name_arg or project_name).replace("-", "_")
             src_dir = cwd / "src" / pkg_name
             src_dir.mkdir(parents=True, exist_ok=True)
             (src_dir / "__init__.py").write_text('"""hello."""\n')
@@ -762,7 +769,7 @@ def test_run_init_python_has_pre_commit_config(tmp_path, monkeypatch):
     assert config.exists()
     content = config.read_text()
     assert "ruff" in content
-    assert "gitleaks-system" in content
+    assert "gitleaks" in content
 
 
 def test_run_init_python_pyproject_has_hatch_vcs(tmp_path, monkeypatch):

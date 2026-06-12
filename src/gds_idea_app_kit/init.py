@@ -516,7 +516,7 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
     project_dir.mkdir()
     click.echo("Running uv init...")
     _run_command(
-        ["uv", "init", "--lib", "--no-workspace", "--build-backend", "hatch"],
+        ["uv", "init", "--lib", "--no-workspace", "--build-backend", "hatch", "--name", app_name],
         cwd=project_dir,
         project_dir=project_dir,
     )

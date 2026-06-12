@@ -17,7 +17,10 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.1
+  - repo: local
     hooks:
-      - id: gitleaks-system
+      - id: gitleaks
+        name: Detect hardcoded secrets
+        entry: gitleaks detect --source . --redact --verbose
+        language: system
+        pass_filenames: false
