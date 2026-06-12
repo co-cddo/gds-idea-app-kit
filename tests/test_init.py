@@ -600,3 +600,262 @@ def test_run_init_infra_checks_only_non_docker_prereqs(tmp_path, monkeypatch):
 
     assert len(prereq_calls) == 1
     assert prereq_calls[0] == ["cdk", "uv", "git"]
+
+
+# ---- run_init python project type ----
+# Verifies that python projects create a package with src/ layout,
+# correct prefix, and no CDK artifacts.
+
+
+def _make_fake_run_command_python(project_name):
+    """Create a fake _run_command that handles uv init --lib for python projects."""
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            # Simulate uv init --lib creating src/ layout
+            (cwd / "pyproject.toml").write_text(
+                f'[project]\nname = "{project_name}"\nversion = "0.1.0"\n\n'
+                '[build-system]\nrequires = ["hatchling"]\n'
+                'build-backend = "hatchling.build"\n'
+            )
+            pkg_name = project_name.split("-")[-1].replace("-", "_")
+            src_dir = cwd / "src" / pkg_name
+            src_dir.mkdir(parents=True, exist_ok=True)
+            (src_dir / "__init__.py").write_text('"""hello."""\n')
+            (src_dir / "py.typed").write_text("")
+            (cwd / "README.md").write_text("# placeholder\n")
+            (cwd / ".python-version").write_text("3.13\n")
+            (cwd / ".gitignore").write_text("__pycache__/\n")
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    return fake_run_command
+
+
+def test_run_init_python_creates_correct_directory(tmp_path, monkeypatch):
+    """Python projects use gds-idea-pkg- prefix for the directory."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    assert project_dir.exists()
+    assert project_dir.is_dir()
+
+
+def test_run_init_python_no_cdk_artifacts(tmp_path, monkeypatch):
+    """Python projects have no app.py, cdk.json, or app_src/."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    assert not (project_dir / "app.py").exists()
+    assert not (project_dir / "cdk.json").exists()
+    assert not (project_dir / "app_src").exists()
+    assert not (project_dir / ".devcontainer").exists()
+
+
+def test_run_init_python_has_src_layout(tmp_path, monkeypatch):
+    """Python projects have a src/{package_name}/ directory."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    assert (project_dir / "src" / "my_lib" / "__init__.py").exists()
+
+
+def test_run_init_python_has_tests_directory(tmp_path, monkeypatch):
+    """Python projects have a tests/ directory with conftest.py."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    assert (project_dir / "tests" / "__init__.py").exists()
+    assert (project_dir / "tests" / "conftest.py").exists()
+
+
+def test_run_init_python_has_ci_workflows(tmp_path, monkeypatch):
+    """Python projects get CI and auto-release workflows."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    assert (project_dir / ".github" / "workflows" / "ci.yml").exists()
+    assert (project_dir / ".github" / "workflows" / "auto-release.yml").exists()
+    assert (project_dir / ".github" / "workflows" / "gds-idea-pypi-publish.yml").exists()
+    assert (project_dir / ".github" / "CODEOWNERS").exists()
+    assert (project_dir / ".github" / "dependabot.yml").exists()
+
+
+def test_run_init_python_no_publish_flag(tmp_path, monkeypatch):
+    """--no-publish flag omits the pypi publish workflow."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13", no_publish=True)
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    assert (project_dir / ".github" / "workflows" / "ci.yml").exists()
+    assert (project_dir / ".github" / "workflows" / "auto-release.yml").exists()
+    assert not (project_dir / ".github" / "workflows" / "gds-idea-pypi-publish.yml").exists()
+
+
+def test_run_init_python_has_pre_commit_config(tmp_path, monkeypatch):
+    """Python projects have a .pre-commit-config.yaml."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    config = project_dir / ".pre-commit-config.yaml"
+    assert config.exists()
+    content = config.read_text()
+    assert "ruff" in content
+    assert "gitleaks-system" in content
+
+
+def test_run_init_python_pyproject_has_hatch_vcs(tmp_path, monkeypatch):
+    """Python projects configure hatch-vcs in pyproject.toml."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    content = (project_dir / "pyproject.toml").read_text()
+    assert "hatch-vcs" in content
+    assert 'dynamic = ["version"]' in content
+    assert "version" not in content.split("[project]")[1].split("dynamic")[0]
+
+
+def test_run_init_python_removes_py_typed(tmp_path, monkeypatch):
+    """Python projects remove the py.typed marker (can be added later)."""
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    project_dir = tmp_path / "gds-idea-pkg-my-lib"
+    assert not (project_dir / "src" / "my_lib" / "py.typed").exists()
+
+
+def test_run_init_python_checks_correct_prereqs(tmp_path, monkeypatch):
+    """Python projects only check uv, git, and gitleaks prerequisites."""
+    monkeypatch.chdir(tmp_path)
+
+    prereq_calls = []
+
+    def fake_check_prerequisites(only=None):
+        prereq_calls.append(only)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites", side_effect=fake_check_prerequisites),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_make_fake_run_command_python("gds-idea-pkg-my-lib"),
+        ),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    assert len(prereq_calls) == 1
+    assert prereq_calls[0] == ["uv", "git", "gitleaks"]
+
+
+def test_run_init_python_installs_dev_deps(tmp_path, monkeypatch):
+    """Python projects install pytest, ruff, and pre-commit as dev deps."""
+    monkeypatch.chdir(tmp_path)
+
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            _make_fake_run_command_python("gds-idea-pkg-my-lib")(cmd, cwd, project_dir)
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("python", "my-lib", "3.13")
+
+    assert len(uv_add_calls) == 1
+    cmd = uv_add_calls[0]
+    assert "--group" in cmd
+    assert "dev" in cmd
+    assert any("pytest" in arg for arg in cmd)
+    assert any("ruff" in arg for arg in cmd)
+    assert "pre-commit" in cmd
+
+
+def test_get_templates_dir_has_python():
+    """The python/ subdirectory contains python package template files."""
+    templates = _get_templates_dir()
+    assert (templates / "python").is_dir()
+    assert (templates / "python" / "ci.yml").is_file()
+    assert (templates / "python" / "auto_release.yml").is_file()
+    assert (templates / "python" / "pre-commit-config.yaml").is_file()
