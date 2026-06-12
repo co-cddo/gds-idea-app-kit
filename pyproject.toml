@@ -58,7 +58,7 @@ docs = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["src/gds_idea_app_kit/templates/**/*.template"]
+extend-exclude = ["src/gds_idea_app_kit/templates/**/*.template", "src/gds_idea_app_kit/_version.py"]
 
 [tool.ruff.lint]
 select = [
