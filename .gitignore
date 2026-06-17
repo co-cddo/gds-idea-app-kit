@@ -218,3 +218,12 @@ __marimo__/
 # CDK (generated during integration tests)
 .cdk.staging
 cdk.out
+
+# Added by idea-app adopt
+*.py[cod]
+.venv/
+.pyright/
+.DS_Store
+**/.DS_Store
+src/*/_version.py
+*.new

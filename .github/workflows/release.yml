@@ -1,40 +1,21 @@
-name: Release
+name: Release & Publish
+
 on:
   push:
     branches: [main]
+
 permissions:
   contents: write
+
 jobs:
   release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get version from pyproject.toml
-        id: version
-        run: |
-          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-      - name: Create tag and release
-        run: |
-          gh release create "${{ steps.version.outputs.tag }}" \
-            --title "${{ steps.version.outputs.tag }}" \
-            --generate-notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-      - name: Build wheel and sdist
-        run: uv build
-      - name: Upload artifacts to release
-        run: gh release upload "${{ steps.version.outputs.tag }}" dist/*.whl dist/*.tar.gz
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # TODO: uncomment when PYPI_INDEX_TOKEN is available
-      # - name: Trigger PyPI index rebuild
-      #   run: |
-      #     gh api repos/co-cddo/gds-idea-pypi/dispatches \
-      #       -f event_type=rebuild-index
-      #   env:
-      #     GH_TOKEN: ${{ secrets.PYPI_INDEX_TOKEN }}
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/auto_tag_release.yml@main
+    secrets: inherit
+
+  publish:
+    needs: release
+    if: ${{ needs.release.outputs.tag != '' }}
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/gds_idea_pypi_publish.yml@main
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit

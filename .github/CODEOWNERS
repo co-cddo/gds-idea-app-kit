@@ -1,5 +1,3 @@
-# Any changes inside the common folder will require approval from @gds-idea-senior-ds
+# Any changes to CI/CD workflows require approval from @gds-idea-senior-ds
 
-/src/gds_idea_app_kit/templates/common/ci_cd_cdk_app.yml @gds-idea-senior-ds
-
-/src/gds_idea_app_kit/templates/common/ci_pr_cdk_app.yml @gds-idea-senior-ds
+/.github/workflows/ @gds-idea-senior-ds
