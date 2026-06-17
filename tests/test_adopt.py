@@ -487,3 +487,53 @@ def test_adopt_python_skips_existing_readme(python_project, capsys):
     assert readme.read_text() == "# My library\n"
     captured = capsys.readouterr()
     assert "Skipping README.md" in captured.out
+
+
+def test_adopt_python_adds_version_file_to_existing_ruff_exclude(python_project, capsys):
+    """adopt adds _version.py to extend-exclude even when [tool.ruff] already exists."""
+    os.chdir(python_project)
+
+    pyproject = python_project / "pyproject.toml"
+    content = pyproject.read_text()
+    content += "\n[tool.ruff]\nline-length = 88\n"
+    pyproject.write_text(content)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    import tomlkit
+
+    with open(pyproject) as f:
+        config = tomlkit.load(f)
+
+    excludes = list(config["tool"]["ruff"].get("extend-exclude", []))
+    assert any("_version.py" in e for e in excludes)
+
+
+def test_adopt_python_does_not_duplicate_version_file_exclude(python_project):
+    """adopt does not add _version.py to extend-exclude if it's already there."""
+    os.chdir(python_project)
+
+    pyproject = python_project / "pyproject.toml"
+    content = pyproject.read_text()
+    content += '\n[tool.ruff]\nline-length = 88\nextend-exclude = ["src/mylib/_version.py"]\n'
+    pyproject.write_text(content)
+
+    with (
+        patch("gds_idea_app_kit.adopt.check_tool_is_current"),
+        patch("gds_idea_app_kit.adopt.check_prerequisites"),
+        patch("gds_idea_app_kit.adopt._run_command", return_value=MagicMock()),
+    ):
+        run_adopt()
+
+    import tomlkit
+
+    with open(pyproject) as f:
+        config = tomlkit.load(f)
+
+    excludes = list(config["tool"]["ruff"].get("extend-exclude", []))
+    assert excludes.count("src/mylib/_version.py") == 1
