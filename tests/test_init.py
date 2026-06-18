@@ -205,6 +205,25 @@ def test_pyproject_template_has_gds_idea_index(framework):
     assert GDS_IDEA_INDEX_URL in content
 
 
+@pytest.mark.parametrize(
+    "framework, app_file",
+    [
+        ("streamlit", "streamlit_app.py"),
+        ("dash", "dash_app.py"),
+        ("fastapi", "fastapi_app.py"),
+    ],
+)
+def test_app_template_sets_dev_mock_user_config_for_local_dev(framework, app_file):
+    """Local app_src runs should point cognito-auth at the scaffolded mock user."""
+    templates = _get_templates_dir()
+    content = (templates / framework / app_file).read_text()
+    compact_content = "".join(content.split())
+    assert "COGNITO_AUTH_DEV_MODE" in content
+    assert "COGNITO_AUTH_DEV_CONFIG" in content
+    assert '"dev_mocks" / "dev_mock_user.json"' in content
+    assert 'notos.getenv("COGNITO_AUTH_DEV_CONFIG")' in compact_content
+
+
 # ---- run_init CDK dependency install ----
 # Verifies that run_init makes two separate uv add calls: one for the public
 # PyPI packages (no --index) and one for the internal package with --index.

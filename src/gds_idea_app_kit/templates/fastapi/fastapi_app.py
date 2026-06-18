@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 
 from cognito_auth.fastapi import FastAPIAuth
 from fastapi import FastAPI, Request
@@ -17,6 +19,13 @@ logging.getLogger("uvicorn.access").setLevel(logging.WARNING)  # Uvicorn access 
 
 # Your app logger
 logger = logging.getLogger(__name__)
+
+if os.getenv("COGNITO_AUTH_DEV_MODE", "").lower() == "true" and not os.getenv(
+    "COGNITO_AUTH_DEV_CONFIG"
+):
+    os.environ["COGNITO_AUTH_DEV_CONFIG"] = str(
+        Path(__file__).resolve().parent.parent / "dev_mocks" / "dev_mock_user.json"
+    )
 
 app = FastAPI()
 auth = FastAPIAuth()
