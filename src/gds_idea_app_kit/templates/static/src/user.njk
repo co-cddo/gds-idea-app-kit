@@ -1,0 +1,50 @@
+---
+layout: page
+title: Your Account
+description: View your authenticated user details
+---
+
+<div id="user-loading">
+  <p class="govuk-body">Loading user information...</p>
+</div>
+
+<div id="user-info" style="display:none;">
+  <dl class="govuk-summary-list">
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">Name</dt>
+      <dd class="govuk-summary-list__value" id="user-name"></dd>
+    </div>
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">Email</dt>
+      <dd class="govuk-summary-list__value" id="user-email"></dd>
+    </div>
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">Groups</dt>
+      <dd class="govuk-summary-list__value" id="user-groups"></dd>
+    </div>
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key">Admin</dt>
+      <dd class="govuk-summary-list__value" id="user-admin"></dd>
+    </div>
+  </dl>
+</div>
+
+<script>
+  fetch('/.auth/user')
+    .then(r => r.ok ? r.json() : null)
+    .then(user => {
+      if (user) {
+        document.getElementById('user-loading').style.display = 'none';
+        document.getElementById('user-info').style.display = 'block';
+        document.getElementById('user-name').textContent = user.name;
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-groups').textContent = (user.groups || []).join(', ') || 'None';
+        document.getElementById('user-admin').textContent = user.is_admin ? 'Yes' : 'No';
+      } else {
+        document.getElementById('user-loading').innerHTML = '<p class="govuk-body">No authentication configured for this site.</p>';
+      }
+    })
+    .catch(() => {
+      document.getElementById('user-loading').innerHTML = '<p class="govuk-body">Failed to load user information.</p>';
+    });
+</script>

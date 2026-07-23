@@ -10,7 +10,7 @@ from pathlib import Path
 
 import tomlkit
 
-from gds_idea_app_kit import WEB_FRAMEWORKS
+from gds_idea_app_kit import STATIC_FRAMEWORKS, WEB_FRAMEWORKS
 
 # Key used in pyproject.toml [tool.*] section
 MANIFEST_KEY = "gds-idea-app-kit"
@@ -49,6 +49,19 @@ PYTHON_OWNED_FILES = {
     "common/LICENCE": "LICENCE",
 }
 
+# Files that `update` manages for static site projects.
+STATIC_OWNED_FILES = {
+    "common/ci_cd_cdk_app.yml": ".github/workflows/ci_cd_cdk_app.yml",
+    "common/ci_pr_cdk_app.yml": ".github/workflows/ci_pr_cdk_app.yml",
+    "common/CODEOWNERS.template": ".github/CODEOWNERS",
+    "common/dependabot.yml": ".github/dependabot.yml",
+    "common/LICENCE": "LICENCE",
+    "static/Dockerfile": "site_src/Dockerfile",
+    "static/handler.py": "site_src/handler.py",
+    "static/devcontainer.json": ".devcontainer/devcontainer.json",
+    "static/docker-compose.yml": ".devcontainer/docker-compose.yml",
+}
+
 
 def hash_file(path: Path) -> str:
     """Compute SHA256 hash of a file.
@@ -68,13 +81,16 @@ def get_tracked_files(framework: str) -> dict[str, str]:
     """Get the full mapping of template source -> project destination for a framework.
 
     Args:
-        framework: The project type (streamlit, dash, fastapi, infra, or python).
+        framework: The project type (streamlit, dash, fastapi, static, infra, or python).
 
     Returns:
         Dict mapping template source paths to project destination paths.
     """
     if framework == "python":
         return dict(PYTHON_OWNED_FILES)
+
+    if framework in STATIC_FRAMEWORKS:
+        return dict(STATIC_OWNED_FILES)
 
     files = dict(TOOL_OWNED_FILES)
     if framework in WEB_FRAMEWORKS:

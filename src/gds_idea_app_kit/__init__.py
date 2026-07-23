@@ -20,3 +20,7 @@ PKG_REPO_PREFIX = "gds-idea-pkg"
 # dev-mock support.  The "infra" project type is infrastructure-only and
 # skips all of these extras.
 WEB_FRAMEWORKS = {"streamlit", "dash", "fastapi"}
+
+# Static site framework — uses StaticSite CDK construct (Lambda + S3),
+# not a containerised web app.
+STATIC_FRAMEWORKS = {"static"}

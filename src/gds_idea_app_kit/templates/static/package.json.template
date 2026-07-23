@@ -1,0 +1,8 @@
+{
+  "name": "{{app_name}}",
+  "private": true,
+  "dependencies": {
+    "@11ty/eleventy": "^3.0.0",
+    "@x-govuk/govuk-eleventy-plugin": "^7.0.0"
+  }
+}
