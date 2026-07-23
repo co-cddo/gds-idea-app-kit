@@ -1,8 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const govukEleventyPlugin = require('@x-govuk/govuk-eleventy-plugin');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import govukEleventyPlugin from '@x-govuk/govuk-eleventy-plugin';
 
-module.exports = function(eleventyConfig) {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default function(eleventyConfig) {
   eleventyConfig.addPlugin(govukEleventyPlugin, {
     header: {
       serviceName: '{{app_name}}'
@@ -37,4 +40,4 @@ module.exports = function(eleventyConfig) {
       output: '_site'
     }
   };
-};
+}
