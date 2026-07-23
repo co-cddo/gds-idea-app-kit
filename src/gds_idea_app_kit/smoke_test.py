@@ -33,6 +33,7 @@ HEALTH_PATHS: dict[str, str] = {
     "streamlit": "/_stcore/health",
     "dash": "/health",
     "fastapi": "/health",
+    "static": "/",
 }
 
 
@@ -196,7 +197,8 @@ def run_smoke_test(build_only: bool, wait: bool = False) -> None:
         sys.exit(1)
 
     # -- Build --
-    click.echo("Building production image...")
+    build_label = "development" if framework == "static" else "production"
+    click.echo(f"Building {build_label} image...")
     try:
         _compose("build", stream=True)
     except subprocess.CalledProcessError:

@@ -3,8 +3,8 @@
 CLI tool for scaffolding and maintaining GDS IDEA web apps on AWS.
 
 Generates projects with:
-- **Streamlit**, **Dash**, or **FastAPI** framework
-- AWS CDK infrastructure (ECS Fargate behind ALB with Cognito auth)
+- **Streamlit**, **Dash**, or **FastAPI** framework, or a **static site** built with Eleventy and GOV.UK styling
+- AWS CDK infrastructure (ECS Fargate behind ALB with Cognito auth, or Lambda + S3 for static sites)
 - VS Code dev container for local development
 - Production-ready multi-stage Dockerfile
 
@@ -81,7 +81,7 @@ The project comes with CI/CD already configured. See the [CI/CD deployment guide
 idea-app init <framework> <app-name> [--python 3.13]
 ```
 
-- `framework`: `streamlit`, `dash`, or `fastapi`
+- `framework`: `streamlit`, `dash`, `fastapi`, or `static`
 - `app-name`: short name for your app (lowercase, hyphens ok). The `gds-idea-app-` prefix is added automatically.
 - `--python`: Python version for the project (default: 3.13)
 

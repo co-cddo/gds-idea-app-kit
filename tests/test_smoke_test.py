@@ -25,6 +25,11 @@ def test_health_path_fastapi():
     assert _get_health_path("fastapi") == "/health"
 
 
+def test_health_path_static():
+    """Static sites check the site root instead of a health endpoint."""
+    assert _get_health_path("static") == "/"
+
+
 def test_health_path_unknown_falls_back():
     """Unknown frameworks fall back to /health."""
     assert _get_health_path("unknown-framework") == "/health"
@@ -92,6 +97,29 @@ def test_build_only_does_not_start_container(tmp_path):
         down_called = any("down" in c for c in calls)
         assert not up_called
         assert not down_called
+
+
+def test_build_only_static_builds_development_image(tmp_path, capsys):
+    """Static site projects build the development target, not production.
+
+    Static sites have no "production" Docker stage — the deployed artifact
+    is a Lambda build, not a running container — so the build message should
+    reflect that the development target is what's being tested.
+    """
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('[project]\nname = "test"\n\n[tool.webapp]\nframework = "static"\n')
+    compose_file = tmp_path / ".devcontainer" / "docker-compose.yml"
+    compose_file.parent.mkdir(parents=True)
+    compose_file.write_text("services:\n  app:\n")
+
+    os.chdir(tmp_path)
+
+    with patch("gds_idea_app_kit.smoke_test._compose"):
+        run_smoke_test(build_only=True)
+
+    output = capsys.readouterr().out
+    assert "Building development image..." in output
+    assert "Health check: /" in output
 
 
 # ---- run_smoke_test cleanup on failure ----

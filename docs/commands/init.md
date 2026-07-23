@@ -12,7 +12,7 @@ idea-app init <type> <name> [--python VERSION] [--no-publish]
 
 | Argument | Description |
 |---|---|
-| `type` | Project type: `streamlit`, `dash`, `fastapi`, `infra`, or `python` |
+| `type` | Project type: `streamlit`, `dash`, `fastapi`, `static`, `infra`, or `python` |
 | `name` | Short name for your project (lowercase, hyphens allowed) |
 
 ## Options
@@ -37,6 +37,29 @@ idea-app init fastapi data-api
 **Directory:** `gds-idea-app-{name}/`
 
 **Includes:** CDK infrastructure, Dockerfile, devcontainer, CI/CD workflows, dev mocks for local auth.
+
+**Prerequisites:** `uv`, `git`, `cdk`, `docker`, `docker compose`
+
+### Static site (static)
+
+Creates an [Eleventy](https://www.11ty.dev) static site with GOV.UK community styling, deployed to AWS Lambda + S3 behind an ALB with Cognito authentication.
+
+```bash
+idea-app init static my-docs
+```
+
+**Directory:** `gds-idea-app-{name}/`
+
+**Includes:**
+
+- Eleventy site with [`@x-govuk/govuk-eleventy-plugin`](https://x-govuk.github.io/govuk-eleventy-plugin/) styling
+- A "Your Account" page demonstrating the `/.auth/user` endpoint (via `StaticSite`'s `cognito-auth` integration)
+- Multi-stage Dockerfile (`development` for local preview, `build` for the Lambda that regenerates the site)
+- Build handler (construct-managed — runs the build command and uploads to S3)
+- Devcontainer with Eleventy live reload and a mocked `/.auth/user` endpoint (`dev_mocks/user.json`) for local testing
+- CI/CD workflows (same as web apps — `cdk deploy` on merge)
+
+Unlike streamlit/dash/fastapi, static sites have no long-running application container in production — the build runs once (or on a schedule) inside a Lambda function, and a separate Lambda serves the built files from S3.
 
 **Prerequisites:** `uv`, `git`, `cdk`, `docker`, `docker compose`
 
