@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import govukEleventyPlugin from '@x-govuk/govuk-eleventy-plugin';
+import { govukEleventyPlugin } from '@x-govuk/govuk-eleventy-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,9 +35,12 @@ export default function(eleventyConfig) {
   });
 
   return {
+    dataTemplateEngine: 'njk',
+    htmlTemplateEngine: 'njk',
+    markdownTemplateEngine: 'njk',
     dir: {
       input: 'src',
-      output: '_site'
+      output: process.env.ELEVENTY_OUTPUT_DIR || '_site'
     }
   };
 }

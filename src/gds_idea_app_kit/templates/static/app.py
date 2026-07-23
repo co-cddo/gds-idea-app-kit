@@ -29,7 +29,7 @@ stack = StaticSite(
     docker_context_path="site_src",
     dockerfile_path="Dockerfile",
     static_site_props=StaticSiteProperties(
-        build_command="npx @11ty/eleventy --output=/tmp/_site",
+        build_command="npx @11ty/eleventy",
         build_schedule=events.Schedule.rate(Duration.hours(6)),
     ),
 )

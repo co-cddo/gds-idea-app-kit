@@ -1,4 +1,5 @@
 ---
+homepage: true
 layout: page
 title: Home
 description: Welcome to {{app_name}}
