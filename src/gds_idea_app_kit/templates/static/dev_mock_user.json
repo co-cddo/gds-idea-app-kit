@@ -1,0 +1,11 @@
+{
+  "email": "dev.user@example.gov.uk",
+  "name": "Dev User",
+  "given_name": "Dev",
+  "family_name": "User",
+  "sub": "mock-sub-123",
+  "groups": ["gds-idea"],
+  "is_admin": true,
+  "email_domain": "example.gov.uk",
+  "email_verified": true
+}

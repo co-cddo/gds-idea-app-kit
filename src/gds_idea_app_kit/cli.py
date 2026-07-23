@@ -27,7 +27,10 @@ def cli():
 
 
 @cli.command()
-@click.argument("framework", type=click.Choice(["streamlit", "dash", "fastapi", "infra", "python"]))
+@click.argument(
+    "framework",
+    type=click.Choice(["streamlit", "dash", "fastapi", "static", "infra", "python"]),
+)
 @click.argument("app_name")
 @click.option(
     "--python",

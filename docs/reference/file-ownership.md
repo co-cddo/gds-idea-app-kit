@@ -31,6 +31,36 @@
 | `tests/` | Your test files |
 | `README.md` | Your documentation |
 
+## Static site projects (static)
+
+### Managed by idea-app (updated by `idea-app update`)
+
+| File | Purpose |
+|---|---|
+| `.github/workflows/ci_cd_cdk_app.yml` | CI/CD orchestrator |
+| `.github/workflows/ci_pr_cdk_app.yml` | PR checks orchestrator |
+| `.github/CODEOWNERS` | Code review requirements |
+| `.github/dependabot.yml` | Dependency update configuration |
+| `.devcontainer/devcontainer.json` | Dev container configuration |
+| `.devcontainer/docker-compose.yml` | Dev container compose file |
+| `site_src/Dockerfile` | Multi-stage build (development + Lambda build target) |
+| `site_src/handler.py` | Build Lambda handler — runs the build command and uploads to S3 |
+| `LICENCE` | MIT licence |
+
+### User-owned (never touched by idea-app)
+
+| File | Purpose |
+|---|---|
+| `app.py` | CDK entry point (`StaticSite` construct configuration) |
+| `cdk.json` | CDK configuration |
+| `pyproject.toml` | Root project dependencies (except manifest section) |
+| `site_src/package.json` | Eleventy and plugin dependencies |
+| `site_src/eleventy.config.js` | Eleventy configuration |
+| `site_src/src/` | Your site content |
+| `dev_mocks/user.json` | Mock `/.auth/user` response for local development |
+| `tests/` | Your test files |
+| `README.md` | Your documentation |
+
 ## Infrastructure projects (infra)
 
 ### Managed by idea-app

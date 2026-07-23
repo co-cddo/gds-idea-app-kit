@@ -35,6 +35,40 @@ gds-idea-app-{name}/
 └── uv.lock
 ```
 
+## Static site (static)
+
+```
+gds-idea-app-{name}/
+├── app.py                          # CDK entry point (StaticSite construct)
+├── cdk.json                        # CDK configuration
+├── pyproject.toml                  # Root: CDK deps + manifest
+├── site_src/
+│   ├── Dockerfile                  # Multi-stage: development + Lambda build
+│   ├── handler.py                  # Build handler (runs build, uploads to S3)
+│   ├── package.json                # Eleventy + govuk-eleventy-plugin
+│   ├── eleventy.config.js          # Eleventy configuration
+│   └── src/
+│       ├── index.md                # Home page
+│       └── user.njk                # Account page (/.auth/user demo)
+├── .devcontainer/
+│   ├── devcontainer.json           # VS Code dev container config
+│   └── docker-compose.yml          # Dev container services (Eleventy --serve)
+├── dev_mocks/
+│   └── user.json                   # Mock /.auth/user response for local dev
+├── tests/
+│   └── test_app.py                 # CDK stack tests
+├── .github/
+│   ├── CODEOWNERS
+│   ├── dependabot.yml
+│   └── workflows/
+│       ├── ci_cd_cdk_app.yml       # Deploy on push to dev/prod
+│       └── ci_pr_cdk_app.yml       # PR checks
+├── .gitignore
+├── LICENCE
+├── README.md
+└── uv.lock
+```
+
 ## Infrastructure only (infra)
 
 ```

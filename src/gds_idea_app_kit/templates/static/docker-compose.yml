@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      context: ../site_src
+      target: development
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../site_src/src:/app/src
+      - ../dev_mocks:/app/dev_mocks:ro

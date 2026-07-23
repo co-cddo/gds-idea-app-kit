@@ -19,6 +19,7 @@ from gds_idea_app_kit import (
     GITHUB_ORG,
     PKG_REPO_PREFIX,
     REPO_PREFIX,
+    STATIC_FRAMEWORKS,
     WEB_FRAMEWORKS,
     __version__,
 )
@@ -249,6 +250,11 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
         _run_init_python(app_name, python_version, no_publish)
         return
 
+    # Dispatch to dedicated handler for static site projects
+    if framework in STATIC_FRAMEWORKS:
+        _run_init_static(app_name, python_version)
+        return
+
     is_web = framework in WEB_FRAMEWORKS
 
     # -- Validate inputs --
@@ -459,6 +465,231 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
     _run_command(["git", "add", "."], cwd=project_dir, project_dir=project_dir)
     _run_command(
         ["git", "commit", "-m", f"Initial scaffold ({framework}, Python {python_version})"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Print next steps --
+    click.echo()
+    click.echo(f"Project created: {repo_name}/")
+    click.echo()
+    click.echo("Next steps:")
+    click.echo(f"  cd {repo_name}")
+    click.echo()
+    click.echo("  # Create the GitHub repo (requires gh CLI):")
+    click.echo(f"  gh repo create {GITHUB_ORG}/{repo_name} --private --source . --push")
+    click.echo()
+    click.echo("  # Or add a remote manually:")
+    click.echo(f"  git remote add origin git@github.com:{GITHUB_ORG}/{repo_name}.git")
+    click.echo("  git push -u origin main")
+
+
+def _run_init_static(app_name: str, python_version: str) -> None:
+    """Scaffold a static site project using the StaticSite CDK construct.
+
+    Creates an Eleventy site with GOV.UK styling, a build handler for Lambda,
+    devcontainer configuration, and CDK infrastructure.
+
+    Args:
+        app_name: Name for the application.
+        python_version: Python version for the CDK project.
+    """
+    # -- Validate inputs --
+    app_name = _sanitize_app_name(app_name)
+    repo_name = f"{REPO_PREFIX}-{app_name}"
+    project_dir = Path.cwd() / repo_name
+
+    if project_dir.exists():
+        click.echo(f"Error: Directory already exists: {project_dir}", err=True)
+        sys.exit(1)
+
+    # -- Check tool is current --
+    check_tool_is_current()
+
+    # -- Check prerequisites --
+    check_prerequisites(only=["cdk", "uv", "git", "docker"])
+
+    click.echo(f"Scaffolding static site project: {app_name}")
+    click.echo(f"  Directory: {repo_name}/")
+    click.echo(f"  Python: {python_version}")
+    click.echo()
+
+    # -- Create directory and run cdk init --
+    project_dir.mkdir()
+    click.echo("Running cdk init...")
+    _run_command(
+        ["cdk", "init", "app", "--language", "python", "--generate-only"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Run uv init on top of cdk output --
+    click.echo("Running uv init...")
+    _run_command(["uv", "init", "--no-workspace"], cwd=project_dir, project_dir=project_dir)
+
+    # -- Clean up CDK artifacts --
+    click.echo("Cleaning up CDK artifacts...")
+    _delete_cdk_artifacts(project_dir)
+
+    # -- Prepare template variables --
+    template_vars = {
+        "app_name": app_name,
+        "python_version": python_version,
+        "python_version_nodot": python_version.replace(".", ""),
+        "year": str(datetime.now().year),
+    }
+    templates = _get_templates_dir()
+
+    # -- Copy app.py (CDK entry point for StaticSite) --
+    click.echo("Copying template files...")
+    _copy_template(templates / "static" / "app.py", project_dir / "app.py")
+
+    # -- Copy site_src/ files --
+    site_src = project_dir / "site_src"
+    site_src.mkdir(exist_ok=True)
+
+    _copy_template(templates / "static" / "Dockerfile", site_src / "Dockerfile")
+    _copy_template(templates / "static" / "handler.py", site_src / "handler.py")
+    _copy_template(
+        templates / "static" / "package.json.template",
+        site_src / "package.json",
+        variables=template_vars,
+    )
+    _copy_template(
+        templates / "static" / "eleventy.config.js.template",
+        site_src / "eleventy.config.js",
+        variables=template_vars,
+    )
+
+    # -- Copy site source content --
+    src_dir = site_src / "src"
+    src_dir.mkdir(exist_ok=True)
+    _copy_template(
+        templates / "static" / "src" / "index.md",
+        src_dir / "index.md",
+        variables=template_vars,
+    )
+    _copy_template(
+        templates / "static" / "src" / "user.njk",
+        src_dir / "user.njk",
+    )
+
+    # -- Copy devcontainer --
+    _copy_template(
+        templates / "static" / "devcontainer.json",
+        project_dir / ".devcontainer" / "devcontainer.json",
+    )
+    _copy_template(
+        templates / "static" / "docker-compose.yml",
+        project_dir / ".devcontainer" / "docker-compose.yml",
+    )
+
+    # -- Copy dev_mocks --
+    dev_mocks_dir = project_dir / "dev_mocks"
+    dev_mocks_dir.mkdir(exist_ok=True)
+    _copy_template(
+        templates / "static" / "dev_mock_user.json",
+        dev_mocks_dir / "user.json",
+    )
+
+    # -- Scaffold root tests directory --
+    tests_dir = project_dir / "tests"
+    tests_dir.mkdir(exist_ok=True)
+    _copy_template(
+        templates / "common" / "test_app_cdk.py",
+        tests_dir / "test_app.py",
+    )
+
+    # -- Copy CI/CD workflows --
+    _copy_template(
+        templates / "common" / "ci_cd_cdk_app.yml",
+        project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml",
+    )
+    _copy_template(
+        templates / "common" / "ci_pr_cdk_app.yml",
+        project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml",
+    )
+    _copy_template(
+        templates / "common" / "CODEOWNERS.template",
+        project_dir / ".github" / "CODEOWNERS",
+    )
+    _copy_template(
+        templates / "common" / "dependabot.yml",
+        project_dir / ".github" / "dependabot.yml",
+    )
+
+    # -- Append to .gitignore --
+    gitignore = project_dir / ".gitignore"
+    extra = (templates / "common" / "gitignore-extra").read_text()
+    with open(gitignore, "a") as f:
+        f.write("\n")
+        f.write(extra)
+        f.write("\n# Static site build output\nsite_src/_site/\nsite_src/node_modules/\n")
+
+    # -- Copy LICENCE --
+    _copy_template(
+        templates / "common" / "LICENCE",
+        project_dir / "LICENCE",
+        variables=template_vars,
+    )
+
+    # -- Copy README --
+    _copy_template(
+        templates / "common" / "README.md.template",
+        project_dir / "README.md",
+        variables=template_vars,
+    )
+
+    # -- Install CDK dependencies --
+    click.echo("Installing CDK dependencies...")
+    _run_command(
+        ["uv", "add", "aws-cdk-lib", "constructs"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+    _run_command(
+        [
+            "uv",
+            "add",
+            "gds-idea-cdk-constructs>=0.3.0",
+            "--index",
+            "gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/",
+        ],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Install dev dependencies --
+    click.echo("Installing dev dependencies...")
+    _run_command(
+        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0"],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    # -- Write [tool.webapp] config --
+    click.echo("Writing project configuration...")
+    _write_webapp_config(project_dir, app_name, "static")
+    _write_pytest_config(project_dir)
+
+    # -- Build and write manifest --
+    manifest = build_manifest(
+        framework="static",
+        app_name=app_name,
+        tool_version=__version__,
+        project_dir=project_dir,
+    )
+    write_manifest(project_dir, manifest)
+
+    # -- Sync dependencies --
+    click.echo("Syncing dependencies...")
+    _run_command(["uv", "sync"], cwd=project_dir, project_dir=project_dir)
+
+    # -- Initial git commit --
+    click.echo("Creating initial commit...")
+    _run_command(["git", "add", "."], cwd=project_dir, project_dir=project_dir)
+    _run_command(
+        ["git", "commit", "-m", f"Initial scaffold (static, Python {python_version})"],
         cwd=project_dir,
         project_dir=project_dir,
     )

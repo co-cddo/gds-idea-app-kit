@@ -1,0 +1,46 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { govukEleventyPlugin } from '@x-govuk/govuk-eleventy-plugin';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default function(eleventyConfig) {
+  eleventyConfig.addPlugin(govukEleventyPlugin, {
+    header: {
+      serviceName: '{{app_name}}'
+    },
+    footer: {
+      meta: {
+        text: 'Built with the GDS IDEA static site construct'
+      }
+    }
+  });
+
+  // Mock /.auth/user in dev server (reads from dev_mocks/user.json)
+  eleventyConfig.setServerOptions({
+    middleware: [
+      function(req, res, next) {
+        if (req.url === '/.auth/user') {
+          const mockPath = path.resolve(__dirname, '../dev_mocks/user.json');
+          if (fs.existsSync(mockPath)) {
+            res.setHeader('Content-Type', 'application/json');
+            res.end(fs.readFileSync(mockPath, 'utf8'));
+            return;
+          }
+        }
+        next();
+      }
+    ]
+  });
+
+  return {
+    dataTemplateEngine: 'njk',
+    htmlTemplateEngine: 'njk',
+    markdownTemplateEngine: 'njk',
+    dir: {
+      input: 'src',
+      output: process.env.ELEVENTY_OUTPUT_DIR || '_site'
+    }
+  };
+}
