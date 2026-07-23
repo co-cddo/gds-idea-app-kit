@@ -2,6 +2,7 @@
 
 import os
 import urllib.error
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -45,6 +46,7 @@ def update_project(tmp_path):
         "app_name": app_name,
         "python_version": "3.13",
         "python_version_nodot": "313",
+        "year": "2024",
     }
 
     # Copy all tracked template files into the project
@@ -387,6 +389,36 @@ def test_update_modified_file_original_unchanged(update_project):
     run_update(dry_run=False)
 
     assert dockerfile.read_text() == "# User modified this file\n"
+
+
+def test_update_substitutes_year_in_licence(update_project):
+    """LICENCE gets a real year substituted, not the literal {{year}} placeholder.
+
+    Regression test: run_update()'s template_vars previously omitted "year",
+    so every idea-app update run overwrote LICENCE with a literal "{{year}}"
+    instead of the current year.
+    """
+    os.chdir(update_project)
+    run_update(dry_run=False)
+
+    licence = update_project / "LICENCE"
+    content = licence.read_text()
+
+    assert "{{year}}" not in content
+    assert "Copyright (c)" in content
+
+
+def test_update_year_changes_from_fixture_value(update_project):
+    """The fixture bakes in year=2024; after update, it reflects the current year."""
+    os.chdir(update_project)
+
+    licence_before = update_project / "LICENCE"
+    assert "2024" in licence_before.read_text()
+
+    run_update(dry_run=False)
+
+    licence_after = licence_before.read_text()
+    assert str(datetime.now().year) in licence_after
 
 
 def test_update_modified_summary_count(update_project, capsys):
