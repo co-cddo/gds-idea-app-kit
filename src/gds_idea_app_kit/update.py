@@ -15,6 +15,7 @@ The update is structured as plan -> apply -> report:
 
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
@@ -303,6 +304,7 @@ def run_update(dry_run: bool, force: bool = False) -> None:
         "app_name": app_name,
         "python_version": python_version,
         "python_version_nodot": python_version_nodot,
+        "year": str(datetime.now().year),
     }
 
     templates_dir = _get_templates_dir()
