@@ -71,6 +71,17 @@ RUN apt-get update \
 
 USER $USERNAME
 
+# Zscaler TLS fix - development stage only, never production.
+# The corporate Zscaler proxy re-signs HTTPS with its own CA, which
+# Python doesn't trust by default (unlike curl/apt, which do). This
+# installs a fix that makes Python trust it. It works by relaxing one
+# certificate validation check, so it must never ship in production
+# images - hence it's only ever installed here, in the development
+# stage, which the production stage below does not build from.
+# https://github.com/co-cddo/gds-idea-pkg-zscaler-fix
+RUN uv pip install "gds-idea-pkg-zscaler-fix>=0.1.2" \
+      --index https://co-cddo.github.io/gds-idea-pypi/simple/
+
 # ============================================================================
 # Production stage - secure, minimal, non-root (DEFAULT)
 # ============================================================================
