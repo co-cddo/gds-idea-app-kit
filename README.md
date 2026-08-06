@@ -218,6 +218,21 @@ docker compose version
 
 This should print something like `Docker Compose version v2.x.x`.
 
+### SSL errors on a Zscaler-managed network persist after `idea-app update`
+
+If you're behind the corporate Zscaler TLS-inspecting proxy and still see
+Python `CERTIFICATE_VERIFY_FAILED` errors after taking a template update
+that adds the [zscaler-fix](https://github.com/co-cddo/gds-idea-pkg-zscaler-fix)
+install to your Dockerfile, the dev container's `.venv` is most likely
+stale. `docker-compose.yml` mounts `/app/.venv` as an anonymous volume so
+it survives container restarts - which also means it isn't rebuilt just
+because the underlying image changed.
+
+```bash
+docker compose down -v   # -v removes the anonymous volume
+docker compose up --build
+```
+
 ## Development
 
 ```bash
