@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 auth = FastAPIAuth()
-auth.protect_app(app)
+auth.protect_app(app, bypass={"/health"})
 
 
 # Health check endpoint for ECS/ALB (unprotected)
