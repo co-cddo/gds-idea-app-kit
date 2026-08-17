@@ -77,6 +77,14 @@ USER $USERNAME
 RUN uv pip install "gds-idea-pkg-zscaler-fix>=0.1.2" \
       --index https://co-cddo.github.io/gds-idea-pypi/simple/
 
+# Wrap the app command so a crash (e.g. a bug introduced while coding)
+# doesn't kill the container before you get a chance to see why. On
+# failure this prints the exit code and where to look, then keeps the
+# container alive briefly so VS Code can still attach and `docker compose
+# logs` / `docker logs` stay queryable. Signals are forwarded to the app
+# so `docker compose down`/stop still shut down promptly on the happy path.
+CMD ["/bin/sh", "-c", "trap 'kill -TERM $PID 2>/dev/null; STOPPING=1' TERM INT; uv run gunicorn dash_app:server -b 0.0.0.0:8080 --workers 1 --preload --timeout 120 --no-control-socket & PID=$!; wait $PID; code=$?; if [ $code -ne 0 ] && [ -z \"$STOPPING\" ]; then echo; echo \"=== App failed to start (exit code $code) ===\"; echo 'Traceback is above. Full logs: docker compose -f .devcontainer/docker-compose.yml logs app'; echo 'After fixing, restart with: docker compose -f .devcontainer/docker-compose.yml restart app'; echo 'Container will stay up for 5 minutes so you can attach and inspect.'; sleep 300; fi; exit $code"]
+
 # ============================================================================
 # Production stage - secure, minimal, non-root (DEFAULT)
 # ============================================================================
