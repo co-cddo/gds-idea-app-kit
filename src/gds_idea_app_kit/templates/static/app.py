@@ -16,10 +16,18 @@ cdk_env = cdk.Environment(
 app_config = AppConfig.from_pyproject()
 dep_config = DeploymentConfig(cdk_env)
 
-Tags.of(app).add("Environment", dep_config.environment.friendly_name)
-Tags.of(app).add("ManagedBy", "cdk")
-Tags.of(app).add("Repository", "TBA")
-Tags.of(app).add("AppName", app_config.app_name)
+stack_tags = {
+    "Environment": dep_config.environment.friendly_name,
+    "ManagedBy": "cdk",
+    "Repository": "TBA",  # TODO: Set the name of this repository
+    "AppName": app_config.app_name,
+    "Owner": "TBA",  # TODO: Set the stack owner(s); separate multiple owners with a comma
+}
+
+for key, value in stack_tags.items():
+    Tags.of(app).add(key, value)
+    Tags.of(app).add(key, value, include_resource_types=["aws:cdk:stack"])
+
 
 stack = StaticSite(
     app,
