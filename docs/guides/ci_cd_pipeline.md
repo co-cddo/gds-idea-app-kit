@@ -26,12 +26,12 @@ Make sure all tools and packages are up to date (check gds-idea-pypi (https://co
 
 ### How it works in practice
 - On PR to dev/prod: runs lint, tests, build, CDK diff. Fix and push again if any check fails. 
-![alt text](<Screenshot 2026-04-14 at 20.06.18.png>)
+![alt text](<screenshots/pr_checks.png>)
 - On push to dev: runs checks then deploys to the dev AWS account. Check progress in Github Actions tab.
 - On push to prod: runs checks then deploys to the prod AWS account. Check progress in Github Actions tab.
-![alt text](<Screenshot 2026-03-18 at 10.13.22.png>)
+![alt text](<screenshots/github_actions.png>)
 - Environment (dev vs prod) is resolved automatically from which branch you push to — the pipeline assumes the corresponding AWS role via OIDC (if this step fails, review the pre-deployment steps)
 - Prod deployment is always reviewed — changes reach prod only via a PR from dev, which requires senior DS approval
 
 ### Process at a glance
-![alt text](<Screenshot 2026-05-12 at 09.37.57.png>)
+![alt text](<screenshots/pipeline_overview.png>)
