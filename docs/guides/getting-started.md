@@ -78,6 +78,22 @@ idea-app smoke-test --wait
 # Visit http://localhost:8080
 ```
 
+If the dev container fails to launch after a code change, it's usually
+because the app crashed on startup (e.g. an import error or unhandled
+exception). Check the terminal output for a banner reading `App failed to
+start`, or run:
+
+```bash
+docker compose -f .devcontainer/docker-compose.yml logs app
+```
+
+The full Python traceback is printed just above the banner. Fix the bug,
+then restart with:
+
+```bash
+docker compose -f .devcontainer/docker-compose.yml restart app
+```
+
 ## Create a Python package
 
 ```bash

@@ -1,5 +1,7 @@
 """Tests for init module helper functions."""
 
+import json
+import subprocess
 from unittest.mock import MagicMock, patch
 
 import click
@@ -868,3 +870,64 @@ def test_get_templates_dir_has_python():
     assert (templates / "python" / "release.yml").is_file()
     assert (templates / "python" / "release_no_publish.yml").is_file()
     assert (templates / "python" / "pre-commit-config.yaml").is_file()
+
+
+# ---- Dockerfile development-stage failure diagnostics ----
+# The `development` stage CMD wraps the app process so a crash on startup
+# (e.g. a bug introduced while coding) prints an actionable banner and keeps
+# the container alive instead of exiting immediately, while still shutting
+# down promptly on a normal `docker compose down`/stop. See devcontainer
+# logging investigation.
+
+
+def _development_stage_dockerfile(framework: str) -> str:
+    templates = _get_templates_dir()
+    content = (templates / framework / "Dockerfile").read_text()
+    # Isolate the `development` stage: between its FROM line and the next
+    # `FROM base AS production` line.
+    start = content.index("FROM base AS development")
+    end = content.index("FROM base AS production", start)
+    return content[start:end]
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_development_dockerfile_has_explicit_cmd(framework):
+    """The development stage must override CMD (not silently inherit base's)."""
+    stage = _development_stage_dockerfile(framework)
+    assert "CMD [" in stage
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_development_dockerfile_cmd_reports_failure_and_keeps_container_alive(framework):
+    """On a non-zero, non-signal exit the wrapper must print how to see logs
+    and restart, then stay up long enough to inspect them."""
+    stage = _development_stage_dockerfile(framework)
+    assert "App failed to start" in stage
+    assert "docker compose -f .devcontainer/docker-compose.yml logs app" in stage
+    assert "docker compose -f .devcontainer/docker-compose.yml restart app" in stage
+    assert "sleep 300" in stage
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_development_dockerfile_cmd_forwards_signals_without_banner(framework):
+    """A normal `docker compose down`/stop (TERM/INT) must not trigger the
+    failure banner - only genuine non-zero app exits should."""
+    stage = _development_stage_dockerfile(framework)
+    assert "trap" in stage
+    assert "STOPPING=1" in stage
+    assert '-z \\"$STOPPING\\"' in stage
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_development_dockerfile_cmd_shell_syntax_is_valid(framework):
+    """The wrapped CMD must be syntactically valid POSIX shell."""
+    stage = _development_stage_dockerfile(framework)
+    cmd_line = next(line for line in stage.splitlines() if line.startswith("CMD ["))
+    args = json.loads(cmd_line[len("CMD "):])
+    assert args[:2] == ["/bin/sh", "-c"]
+    result = subprocess.run(
+        ["/bin/sh", "-n", "-c", args[2]],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
