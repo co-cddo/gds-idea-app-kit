@@ -73,7 +73,7 @@ This creates a directory `gds-idea-app-my-dashboard/` containing:
 
 The tool runs `cdk init`, `uv init`, copies template files, installs CDK dependencies, and makes an initial git commit. All of this happens automatically.
 
-The project comes with CI/CD already configured. See the [CI/CD deployment guide](src/gds_idea_app_kit/templates/common/readme.md)
+The project comes with CI/CD already configured. See the [CI/CD deployment guide](docs/guides/ci_cd_pipeline.md)
 
 ### Options
 
