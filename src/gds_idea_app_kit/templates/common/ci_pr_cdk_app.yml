@@ -52,5 +52,5 @@ jobs:
 
   ai-review:
     if: github.event.action == 'labeled' && github.event.label.name == 'ai-review'
-    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_ai_review.yml@ai_reviewer
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_ai_review.yml@main
     secrets: inherit
