@@ -17,13 +17,13 @@ jobs:
     secrets: inherit
 
   lint:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_lint.yml@main
 
   test:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_test.yml@main
 
   build:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_build.yml@main

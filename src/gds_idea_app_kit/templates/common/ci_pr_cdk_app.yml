@@ -14,37 +14,37 @@ permissions:
 
 jobs:
   ci_pr_dev:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pr_dev.yml@main
     with:
       run-version-check: false
       
   ci_build:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_build.yml@main
     with:
       run-version-check: false
 
   ci_pyproject_version:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pyproject_version.yml@main
     with:
       run-version-check: true
 
   ci_lint:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_lint.yml@main
     with:
       run-version-check: false
 
   ci_tests:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_tests.yml@main
     with:
       run-version-check: false
 
   ci_cdk_diff:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' || github.event.label.name != 'ai-review'
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_cdk_diff.yml@main
     with:
       run-version-check: false
