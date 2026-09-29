@@ -2,9 +2,9 @@
 import os
 
 import aws_cdk as cdk
-from aws_cdk import Duration, Tags
+from aws_cdk import Duration
 from aws_cdk import aws_events as events
-from gds_idea_cdk_constructs import AppConfig, DeploymentConfig
+from gds_idea_cdk_constructs import AppConfig, DeploymentConfig, IdeaTags
 from gds_idea_cdk_constructs.static_site import AuthType, StaticSite, StaticSiteProperties
 
 app = cdk.App()
@@ -16,18 +16,12 @@ cdk_env = cdk.Environment(
 app_config = AppConfig.from_pyproject()
 dep_config = DeploymentConfig(cdk_env)
 
-stack_tags = {
-    "Environment": dep_config.environment.friendly_name,
-    "ManagedBy": "cdk",
-    "Repository": "TBA",  # TODO: Set the name of this repository
-    "AppName": app_config.app_name,
-    "Owner": "TBA",  # TODO: Set the stack owner(s); separate multiple owners with a comma
-}
-
-for key, value in stack_tags.items():
-    Tags.of(app).add(key, value)
-    Tags.of(app).add(key, value, include_resource_types=["aws:cdk:stack"])
-
+IdeaTags(
+    environment=dep_config.environment,
+    app_name=app_config.app_name,
+    repository="{{repository}}",
+    # owners=["Your Name"],  # optional: names, not email addresses
+).apply(app)
 
 stack = StaticSite(
     app,

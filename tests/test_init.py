@@ -1,5 +1,7 @@
 """Tests for init module helper functions."""
 
+import ast
+import re
 from unittest.mock import MagicMock, patch
 
 import click
@@ -285,7 +287,7 @@ def test_run_init_second_uv_add_uses_gds_idea_index(tmp_path, monkeypatch):
         run_init("streamlit", "test-app", "3.13")
 
     second = uv_add_calls[1]
-    assert "gds-idea-cdk-constructs>=0.3.0" in second
+    assert "gds-idea-cdk-constructs>=0.7.0" in second
     assert "--index" in second
     assert any(GDS_IDEA_INDEX_URL in arg for arg in second)
     assert not any("git+ssh" in arg for arg in second)
@@ -868,3 +870,139 @@ def test_get_templates_dir_has_python():
     assert (templates / "python" / "release.yml").is_file()
     assert (templates / "python" / "release_no_publish.yml").is_file()
     assert (templates / "python" / "pre-commit-config.yaml").is_file()
+
+
+# ---- app.py tagging (IdeaTags) ----
+# The scaffolded app.py uses IdeaTags from gds-idea-cdk-constructs. The
+# {{repository}} placeholder is filled in with the GitHub repo name at init.
+
+APP_TEMPLATES = ["web_common", "static", "infra"]
+
+
+@pytest.mark.parametrize("template", APP_TEMPLATES)
+def test_app_template_uses_idea_tags(template):
+    """Test that each app.py template applies tags with IdeaTags."""
+    content = (_get_templates_dir() / template / "app.py").read_text()
+
+    assert "IdeaTags(" in content
+    assert ").apply(app)" in content
+    assert "IdeaTags" in content.split("app = cdk.App()")[0]
+
+
+@pytest.mark.parametrize("template", APP_TEMPLATES)
+def test_app_template_has_no_inline_tag_block(template):
+    """Test that the old inline Tags.of block and TBA placeholders are gone."""
+    content = (_get_templates_dir() / template / "app.py").read_text()
+
+    assert "Tags.of" not in content
+    assert "stack_tags" not in content
+    assert "TBA" not in content
+
+
+@pytest.mark.parametrize("template", APP_TEMPLATES)
+def test_app_template_has_repository_placeholder(template):
+    """Test that each app.py template takes the repository from init."""
+    content = (_get_templates_dir() / template / "app.py").read_text()
+
+    assert 'repository="{{repository}}"' in content
+
+
+@pytest.mark.parametrize("template", APP_TEMPLATES)
+def test_app_template_owners_is_optional_and_commented(template):
+    """Test that owners is shown as a commented, optional example."""
+    content = (_get_templates_dir() / template / "app.py").read_text()
+
+    assert '# owners=["Your Name"]' in content
+    assert "names, not email" in content
+
+
+def _fake_run_command_for(project_name):
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "init"]:
+            (cwd / "pyproject.toml").write_text(
+                f'[project]\nname = "{project_name}"\nversion = "0.0.0"\n\n[tool]\n'
+            )
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    return fake_run_command
+
+
+@pytest.mark.parametrize(
+    ("framework", "app_name", "expects"),
+    [
+        ("streamlit", "test-app", "WebApp("),
+        ("infra", "test-infra", "cdk.Stack("),
+        ("static", "test-site", "StaticSite("),
+    ],
+)
+def test_run_init_app_py_has_repository_filled_in(
+    tmp_path, monkeypatch, framework, app_name, expects
+):
+    """Test that init renders app.py with the real repo name and valid Python."""
+    monkeypatch.chdir(tmp_path)
+    repo_name = f"{REPO_PREFIX}-{app_name}"
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_fake_run_command_for(repo_name),
+        ),
+    ):
+        run_init(framework, app_name, "3.13")
+
+    content = (tmp_path / repo_name / "app.py").read_text()
+    assert f'repository="{repo_name}"' in content
+    assert "{{" not in content
+    assert expects in content
+    ast.parse(content)
+
+
+@pytest.mark.parametrize(
+    ("framework", "app_name"),
+    [("streamlit", "test-app"), ("infra", "test-infra"), ("static", "test-site")],
+)
+def test_run_init_repository_is_bare_name_without_org(tmp_path, monkeypatch, framework, app_name):
+    """Test that the repository value has no org prefix, as IdeaTags requires."""
+    monkeypatch.chdir(tmp_path)
+    repo_name = f"{REPO_PREFIX}-{app_name}"
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch(
+            "gds_idea_app_kit.init._run_command",
+            side_effect=_fake_run_command_for(repo_name),
+        ),
+    ):
+        run_init(framework, app_name, "3.13")
+
+    content = (tmp_path / repo_name / "app.py").read_text()
+    repository = re.search(r'repository="([^"]*)"', content).group(1)
+    assert "/" not in repository
+    assert not repository.endswith(".git")
+
+
+@pytest.mark.parametrize(
+    ("framework", "app_name"),
+    [("streamlit", "test-app"), ("infra", "test-infra"), ("static", "test-site")],
+)
+def test_run_init_installs_constructs_with_idea_tags_floor(
+    tmp_path, monkeypatch, framework, app_name
+):
+    """Test that every CDK project type requires a constructs version with IdeaTags."""
+    monkeypatch.chdir(tmp_path)
+    repo_name = f"{REPO_PREFIX}-{app_name}"
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return _fake_run_command_for(repo_name)(cmd, cwd, project_dir)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init(framework, app_name, "3.13")
+
+    assert any("gds-idea-cdk-constructs>=0.7.0" in cmd for cmd in uv_add_calls)

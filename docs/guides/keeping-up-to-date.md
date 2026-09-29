@@ -26,6 +26,54 @@ git add -A && git commit -m "Update idea-app managed files"
 
 See [File ownership](../reference/file-ownership.md) for the complete list.
 
+## Migrating `app.py` tags to `IdeaTags`
+
+`app.py` is yours, so `idea-app update` does not change it. Projects created before `IdeaTags` was added still have the inline tagging code in `app.py`, and you need to switch them over by hand.
+
+New projects are scaffolded with `IdeaTags` from `gds-idea-cdk-constructs` (version 0.7.0 or later). It applies the standard tags (`Environment`, `ManagedBy`, `Repository`, `AppName` and optionally `Owner`) to every stack and resource in the app, and checks the values when the app starts, so a placeholder like `TBA` is caught before you deploy.
+
+**1. Upgrade the library**
+
+```bash
+uv add "gds-idea-cdk-constructs>=0.7.0" --index gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/
+```
+
+**2. Replace the tag code in `app.py`**
+
+Before:
+
+```python
+from aws_cdk import Tags
+
+Tags.of(app).add("Environment", dep_config.environment.friendly_name)
+Tags.of(app).add("ManagedBy", "cdk")
+Tags.of(app).add("Repository", "TBA")
+Tags.of(app).add("AppName", app_config.app_name)
+```
+
+After:
+
+```python
+from gds_idea_cdk_constructs import AppConfig, DeploymentConfig, IdeaTags
+
+IdeaTags(
+    environment=dep_config.environment,
+    app_name=app_config.app_name,
+    repository="gds-idea-app-my-dashboard",
+    owners=["Your Name"],  # optional
+).apply(app)
+```
+
+Things to know:
+
+- `repository` is the **repository name only**, for example `gds-idea-app-my-dashboard`. Do not include the organisation (`co-cddo/`), a URL or `.git`.
+- `owners` is optional. Give one entry per person, and use names rather than email addresses. Commas are not allowed in AWS tag values, so do not put several owners in one string. Multiple owners are joined with `+` in the `Owner` tag.
+- `ManagedBy` is now always lowercase `cdk`.
+- Extra tags can be added with `extra_tags={"Name": "My App"}`.
+- Remove the `Tags` import from `aws_cdk` if nothing else uses it.
+
+See the [tagging documentation](https://co-cddo.github.io/gds-idea-cdk-constructs-new/api/tagging/) for the full details.
+
 ## Handling conflicts
 
 If you've locally modified a managed file, `update` will:

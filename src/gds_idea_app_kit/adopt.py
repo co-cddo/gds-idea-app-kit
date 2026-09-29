@@ -146,7 +146,7 @@ def _run_adopt_cdk(project_dir: Path) -> None:
         [
             "uv",
             "add",
-            "gds-idea-cdk-constructs>=0.3.0",
+            "gds-idea-cdk-constructs>=0.7.0",
             "--index",
             "gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/",
         ],

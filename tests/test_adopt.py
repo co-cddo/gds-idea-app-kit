@@ -197,7 +197,7 @@ def test_adopt_installs_constructs_from_index(cdk_project):
 
     assert len(uv_add_calls) == 1
     cmd = uv_add_calls[0]
-    assert "gds-idea-cdk-constructs>=0.3.0" in cmd
+    assert "gds-idea-cdk-constructs>=0.7.0" in cmd
     assert "--index" in cmd
     assert any("gds-idea-pypi" in arg for arg in cmd)
 
