@@ -305,15 +305,24 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
         "python_version": python_version,
         "python_version_nodot": python_version_nodot,
         "year": str(datetime.now().year),
+        "repository": repo_name,
     }
     templates = _get_templates_dir()
 
     # -- Copy app.py (CDK entry point) --
     click.echo("Copying template files...")
     if is_web:
-        _copy_template(templates / "web_common" / "app.py", project_dir / "app.py")
+        _copy_template(
+            templates / "web_common" / "app.py",
+            project_dir / "app.py",
+            variables=template_vars,
+        )
     else:
-        _copy_template(templates / "infra" / "app.py", project_dir / "app.py")
+        _copy_template(
+            templates / "infra" / "app.py",
+            project_dir / "app.py",
+            variables=template_vars,
+        )
 
     # -- Copy framework files into app_src/ (web frameworks only) --
     if is_web:
@@ -426,7 +435,7 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
         [
             "uv",
             "add",
-            "gds-idea-cdk-constructs>=0.3.0",
+            "gds-idea-cdk-constructs>=0.7.0",
             "--index",
             "gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/",
         ],
@@ -537,12 +546,17 @@ def _run_init_static(app_name: str, python_version: str) -> None:
         "python_version": python_version,
         "python_version_nodot": python_version.replace(".", ""),
         "year": str(datetime.now().year),
+        "repository": repo_name,
     }
     templates = _get_templates_dir()
 
     # -- Copy app.py (CDK entry point for StaticSite) --
     click.echo("Copying template files...")
-    _copy_template(templates / "static" / "app.py", project_dir / "app.py")
+    _copy_template(
+        templates / "static" / "app.py",
+        project_dir / "app.py",
+        variables=template_vars,
+    )
 
     # -- Copy site_src/ files --
     site_src = project_dir / "site_src"
@@ -651,7 +665,7 @@ def _run_init_static(app_name: str, python_version: str) -> None:
         [
             "uv",
             "add",
-            "gds-idea-cdk-constructs>=0.3.0",
+            "gds-idea-cdk-constructs>=0.7.0",
             "--index",
             "gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/",
         ],

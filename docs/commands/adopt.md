@@ -14,7 +14,7 @@ Run this from inside an existing CDK project directory.
 
 1. Copies CI/CD workflow files (`.github/workflows/`)
 2. Copies CODEOWNERS and dependabot configuration
-3. Installs `gds-idea-cdk-constructs` from the internal PyPI index
+3. Installs `gds-idea-cdk-constructs` (0.7.0 or later) from the internal PyPI index
 4. Writes a manifest to `pyproject.toml` (as `infra` type)
 
 ## When to use
