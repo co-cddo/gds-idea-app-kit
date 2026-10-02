@@ -14,6 +14,7 @@ The update is structured as plan -> apply -> report:
 """
 
 import sys
+import tomllib
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -21,8 +22,13 @@ from pathlib import Path
 
 import click
 
-from gds_idea_app_kit import __version__
-from gds_idea_app_kit.init import _apply_template_vars, _get_templates_dir
+from gds_idea_app_kit import STATIC_FRAMEWORKS, WEB_FRAMEWORKS, __version__
+from gds_idea_app_kit.init import (
+    GDS_IDEA_INDEX_URL,
+    ZSCALER_FIX_REQUIREMENT,
+    _apply_template_vars,
+    _get_templates_dir,
+)
 from gds_idea_app_kit.manifest import (
     build_manifest,
     get_tracked_files,
@@ -250,6 +256,89 @@ def _update_manifest(
     write_manifest(project_dir, new_manifest)
 
 
+def _has_zscaler_default_group(pyproject_path: Path) -> bool:
+    """Check whether a pyproject.toml defines the zscaler group and installs it by default.
+
+    Args:
+        pyproject_path: Path to the pyproject.toml to inspect.
+
+    Returns:
+        True if ``[dependency-groups] zscaler`` exists and is in
+        ``[tool.uv] default-groups``.
+    """
+    try:
+        with open(pyproject_path, "rb") as f:
+            config = tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError):
+        return False
+
+    has_group = "zscaler" in config.get("dependency-groups", {})
+    default_groups = config.get("tool", {}).get("uv", {}).get("default-groups", [])
+    return has_group and "zscaler" in default_groups
+
+
+def _zscaler_projects_to_fix(project_dir: Path, framework: str) -> list[str]:
+    """List project directories (relative) that are missing the Zscaler default group.
+
+    Python package projects are skipped: they have no containers, and the fix is
+    for the CDK and app projects scaffolded by idea-app.
+
+    Args:
+        project_dir: The project root directory.
+        framework: The framework recorded in the manifest.
+
+    Returns:
+        Relative directory names, e.g. ``["app_src", "."]``.
+    """
+    candidates = []
+    if framework in WEB_FRAMEWORKS:
+        candidates.append("app_src")
+    if framework in WEB_FRAMEWORKS or framework in STATIC_FRAMEWORKS or framework == "infra":
+        candidates.append(".")
+
+    missing = []
+    for rel in candidates:
+        pyproject = project_dir / rel / "pyproject.toml"
+        if pyproject.exists() and not _has_zscaler_default_group(pyproject):
+            missing.append(rel)
+    return missing
+
+
+def _report_zscaler(project_dir: Path, framework: str) -> None:
+    """Tell the user how to add the Zscaler fix to projects that don't have it yet.
+
+    The Dockerfile used to install the fix itself. It is now a dependency group in
+    pyproject.toml, which the tool doesn't own, so existing projects need a
+    one-off edit.
+
+    Args:
+        project_dir: The project root directory.
+        framework: The framework recorded in the manifest.
+    """
+    missing = _zscaler_projects_to_fix(project_dir, framework)
+    if not missing:
+        return
+
+    click.echo()
+    click.echo("Action needed: add the Zscaler TLS fix as a default dependency group.")
+    click.echo("  The dev container no longer installs it from the Dockerfile. It now lives in")
+    click.echo("  pyproject.toml, so it survives `uv sync` and stays out of production images.")
+    click.echo()
+    for rel in missing:
+        where = "the repository root" if rel == "." else f"{rel}/"
+        click.echo(f"  In {where}:")
+        if rel != ".":
+            click.echo(f"    cd {rel}")
+        click.echo(
+            f'    uv add --group zscaler "{ZSCALER_FIX_REQUIREMENT}" '
+            f"--index gds-idea={GDS_IDEA_INDEX_URL}"
+        )
+        click.echo("    Then add to pyproject.toml:")
+        click.echo("      [tool.uv]")
+        click.echo('      default-groups = ["dev", "zscaler"]')
+        click.echo()
+
+
 def run_update(dry_run: bool, force: bool = False) -> None:
     """Update gds-idea-app-kit managed files in an existing project.
 
@@ -318,6 +407,8 @@ def run_update(dry_run: bool, force: bool = False) -> None:
         _apply_updates(plan)
 
     _report_updates(plan, dry_run)
+
+    _report_zscaler(project_dir, framework)
 
     has_writes = any(item.action in (Action.CREATE, Action.UPDATE, Action.FORCE) for item in plan)
     if not dry_run and has_writes:

@@ -27,6 +27,9 @@ from gds_idea_app_kit.manifest import build_manifest, write_manifest
 from gds_idea_app_kit.prerequisites import check_prerequisites
 from gds_idea_app_kit.version import check_tool_is_current
 
+ZSCALER_FIX_REQUIREMENT = "gds-idea-pkg-zscaler-fix>=0.1.2"
+GDS_IDEA_INDEX_URL = "https://co-cddo.github.io/gds-idea-pypi/simple/"
+
 
 def _sanitize_app_name(name: str) -> str:
     """Sanitize and validate an app name for use as a DNS subdomain label.
@@ -230,6 +233,41 @@ def _write_pytest_config(project_dir: Path) -> None:
         tomlkit.dump(config, f)
 
 
+def _add_zscaler_group(project_dir: Path) -> None:
+    """Add the Zscaler TLS fix to the root project as a default dependency group.
+
+    The fix is development-only. It lives in its own group (not ``dev``) and is
+    listed in ``[tool.uv] default-groups`` so a plain ``uv sync`` installs it and
+    keeps it, rather than removing it as a package that isn't in the lockfile.
+
+    Args:
+        project_dir: The project root directory.
+    """
+    _run_command(
+        [
+            "uv",
+            "add",
+            "--group",
+            "zscaler",
+            ZSCALER_FIX_REQUIREMENT,
+            "--index",
+            f"gds-idea={GDS_IDEA_INDEX_URL}",
+        ],
+        cwd=project_dir,
+        project_dir=project_dir,
+    )
+
+    pyproject_path = project_dir / "pyproject.toml"
+    with open(pyproject_path) as f:
+        config = tomlkit.load(f)
+
+    uv_config = config.setdefault("tool", {}).setdefault("uv", {})
+    uv_config["default-groups"] = ["dev", "zscaler"]
+
+    with open(pyproject_path, "w") as f:
+        tomlkit.dump(config, f)
+
+
 def run_init(framework: str, app_name: str, python_version: str, no_publish: bool = False) -> None:
     """Scaffold a new project.
 
@@ -340,6 +378,18 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
             variables=template_vars,
         )
 
+        # VS Code task that runs the app with auto-reload inside the dev container
+        _copy_template(
+            templates / framework / "tasks.json",
+            app_src / ".vscode" / "tasks.json",
+        )
+
+        # Keeps tests, credentials and local environments out of the image
+        _copy_template(
+            templates / "web_common" / "Dockerfile.dockerignore",
+            app_src / "Dockerfile.dockerignore",
+        )
+
         # App pyproject.toml (from .toml.template with substitution)
         _copy_template(
             templates / framework / "pyproject.toml.template",
@@ -397,6 +447,14 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
             templates / "web_common" / "docker-compose.yml",
             project_dir / ".devcontainer" / "docker-compose.yml",
         )
+        _copy_template(
+            templates / "web_common" / "devcontainer-README.md",
+            project_dir / ".devcontainer" / "README.md",
+        )
+        _copy_template(
+            templates / "web_common" / "aws-dev-README.md",
+            project_dir / ".aws-dev" / "README.md",
+        )
 
         dev_mocks_src = templates / "dev_mocks"
         for mock_file in dev_mocks_src.iterdir():
@@ -450,6 +508,7 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
         cwd=project_dir,
         project_dir=project_dir,
     )
+    _add_zscaler_group(project_dir)
 
     # -- Write [tool.webapp] config for AppConfig.from_pyproject() --
     click.echo("Writing project configuration...")
@@ -680,6 +739,7 @@ def _run_init_static(app_name: str, python_version: str) -> None:
         cwd=project_dir,
         project_dir=project_dir,
     )
+    _add_zscaler_group(project_dir)
 
     # -- Write [tool.webapp] config --
     click.echo("Writing project configuration...")

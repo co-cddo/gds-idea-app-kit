@@ -22,9 +22,11 @@ from gds_idea_app_kit.update import (
     _apply_updates,
     _check_version,
     _classify_file,
+    _has_zscaler_default_group,
     _parse_version,
     _plan_updates,
     _report_updates,
+    _zscaler_projects_to_fix,
     run_update,
 )
 from gds_idea_app_kit.version import _fetch_latest_version, check_tool_is_current
@@ -867,3 +869,130 @@ def test_report_dry_run_footer(capsys):
 
     captured = capsys.readouterr()
     assert "No changes made (dry run)." in captured.out
+
+
+# ---- new dev container files are delivered to existing projects ----
+
+
+@pytest.mark.parametrize(
+    "dest",
+    [
+        "app_src/.vscode/tasks.json",
+        "app_src/Dockerfile.dockerignore",
+        ".devcontainer/README.md",
+        ".aws-dev/README.md",
+    ],
+)
+def test_update_creates_dev_container_files_missing_from_existing_project(
+    update_project, capsys, dest
+):
+    """Projects scaffolded before these files existed get them on update."""
+    (update_project / dest).unlink()
+
+    os.chdir(update_project)
+    run_update(dry_run=False)
+
+    assert f"Created: {dest}" in capsys.readouterr().out
+    assert (update_project / dest).exists()
+
+
+# ---- Zscaler default-group check ----
+
+ZSCALER_GROUPS = """\
+[dependency-groups]
+dev = ["pytest"]
+zscaler = ["gds-idea-pkg-zscaler-fix>=0.1.2"]
+
+[tool.uv]
+default-groups = ["dev", "zscaler"]
+"""
+
+ZSCALER_PYPROJECT = '[project]\nname = "x"\nversion = "0.0.0"\n\n' + ZSCALER_GROUPS
+
+
+def test_has_zscaler_default_group_true(tmp_path):
+    f = tmp_path / "pyproject.toml"
+    f.write_text(ZSCALER_PYPROJECT)
+    assert _has_zscaler_default_group(f) is True
+
+
+def test_has_zscaler_default_group_false_without_group(tmp_path):
+    f = tmp_path / "pyproject.toml"
+    f.write_text('[project]\nname = "x"\nversion = "0.0.0"\n')
+    assert _has_zscaler_default_group(f) is False
+
+
+def test_has_zscaler_default_group_false_when_not_default(tmp_path):
+    """A group that plain `uv sync` doesn't install gets removed/omitted, so it doesn't count."""
+    f = tmp_path / "pyproject.toml"
+    f.write_text(ZSCALER_PYPROJECT.replace('default-groups = ["dev", "zscaler"]', ""))
+    assert _has_zscaler_default_group(f) is False
+
+
+def test_has_zscaler_default_group_false_for_unparseable_file(tmp_path):
+    f = tmp_path / "pyproject.toml"
+    f.write_text("not [valid toml")
+    assert _has_zscaler_default_group(f) is False
+
+
+def test_zscaler_projects_to_fix_lists_app_and_root(update_project):
+    (update_project / "app_src" / "pyproject.toml").write_text(
+        '[project]\nname = "x"\nversion = "0.0.0"\n'
+    )
+    assert _zscaler_projects_to_fix(update_project, "streamlit") == ["app_src", "."]
+
+
+def test_zscaler_projects_to_fix_skips_projects_that_have_it(update_project):
+    (update_project / "app_src" / "pyproject.toml").write_text(ZSCALER_PYPROJECT)
+    assert _zscaler_projects_to_fix(update_project, "streamlit") == ["."]
+
+
+def test_zscaler_projects_to_fix_skips_missing_app_pyproject(tmp_path):
+    (tmp_path / "pyproject.toml").write_text(ZSCALER_PYPROJECT)
+    assert _zscaler_projects_to_fix(tmp_path, "fastapi") == []
+
+
+def test_zscaler_projects_to_fix_static_and_infra_check_root_only(tmp_path):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\nversion = "0.0.0"\n')
+    assert _zscaler_projects_to_fix(tmp_path, "static") == ["."]
+    assert _zscaler_projects_to_fix(tmp_path, "infra") == ["."]
+
+
+def test_zscaler_projects_to_fix_ignores_python_packages(tmp_path):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\nversion = "0.0.0"\n')
+    assert _zscaler_projects_to_fix(tmp_path, "python") == []
+
+
+def test_update_warns_when_zscaler_group_missing(update_project, capsys):
+    (update_project / "app_src").mkdir(exist_ok=True)
+    (update_project / "app_src" / "pyproject.toml").write_text(
+        '[project]\nname = "x"\nversion = "0.0.0"\n'
+    )
+
+    os.chdir(update_project)
+    run_update(dry_run=False)
+
+    out = capsys.readouterr().out
+    assert "Action needed" in out
+    assert "uv add --group zscaler" in out
+    assert "gds-idea-pkg-zscaler-fix>=0.1.2" in out
+    assert 'default-groups = ["dev", "zscaler"]' in out
+    assert "cd app_src" in out
+
+
+def test_update_warns_about_zscaler_in_dry_run(update_project, capsys):
+    os.chdir(update_project)
+    run_update(dry_run=True)
+    assert "Action needed" in capsys.readouterr().out
+
+
+def test_update_no_zscaler_warning_when_groups_present(update_project, capsys):
+    (update_project / "app_src").mkdir(exist_ok=True)
+    (update_project / "app_src" / "pyproject.toml").write_text(ZSCALER_PYPROJECT)
+    root = update_project / "pyproject.toml"
+    root.write_text(root.read_text() + "\n" + ZSCALER_GROUPS)
+
+    os.chdir(update_project)
+    run_update(dry_run=False)
+
+    assert "Action needed" not in capsys.readouterr().out

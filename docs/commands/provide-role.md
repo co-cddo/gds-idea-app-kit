@@ -31,7 +31,9 @@ aws_region = "eu-west-2"
 
 1. Reads the role ARN from `[tool.webapp.dev]` in `pyproject.toml`
 2. Assumes the role using your current AWS credentials (via boto3 STS)
-3. Writes temporary credentials to `.aws-dev/` (which is mounted into the dev container)
+3. Writes temporary credentials to `.aws-dev/`
+
+`.aws-dev/` is mounted read-only into the dev container at `/home/appuser/.aws`, so the AWS CLI and SDKs in the container pick the credentials up automatically. The mount is live: you can run the command before or after the container starts, and refresh credentials without restarting it.
 
 The credentials expire after the configured duration (default: 1 hour).
 

@@ -1,0 +1,25 @@
+# Managed by idea-app (run `idea-app update` to refresh).
+#
+# Keeps files out of the Docker build context and the image. Docker reads this
+# file automatically because it sits next to app_src/Dockerfile. Paths are
+# relative to the repository root, which is the build context.
+
+# Never send credentials or VCS data to the builder
+.git
+.github
+.aws-dev
+.devcontainer
+
+# Local environments and caches (the image installs its own)
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+
+# Tests and editor config are not needed at runtime
+app_src/tests
+app_src/.vscode
+
+# CDK output
+**/cdk.out
