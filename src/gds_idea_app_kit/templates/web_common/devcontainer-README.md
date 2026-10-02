@@ -24,8 +24,10 @@ whatever your code does, and the app runs from a VS Code task called **Run app**
 changes you save are picked up.
 
 If your code has an error, the traceback appears in the "Run app" terminal. Fix
-the code and run the task again: **Terminal > Run Task... > Run app**. You do not
-need to rebuild or restart the container.
+the code and run the task again: press **Cmd+Shift+B** (macOS) or
+**Ctrl+Shift+B** (Windows/Linux), or use **Terminal > Run Task... > Run app**.
+If the app is still running, VS Code offers to restart it. You do not need to
+rebuild or restart the container.
 
 If you declined automatic tasks, start the app yourself with that command. You
 can also run any other command in a terminal in the container, for example

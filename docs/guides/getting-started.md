@@ -82,7 +82,7 @@ idea-app smoke-test --wait
 
 ### When your code has an error
 
-The app runs from a VS Code task, not as the container's main process. If your code has an error, the traceback appears in the "Run app" terminal and the dev container keeps running. Fix the code and run the task again (**Terminal > Run Task... > Run app**). You do not need to rebuild the container.
+The app runs from a VS Code task, not as the container's main process. If your code has an error, the traceback appears in the "Run app" terminal and the dev container keeps running. Fix the code and run the task again with **Cmd+Shift+B** (macOS) or **Ctrl+Shift+B** (Windows/Linux), or from **Terminal > Run Task... > Run app**. You do not need to rebuild the container.
 
 See `.devcontainer/README.md` in your project for the full dev container guide.
 

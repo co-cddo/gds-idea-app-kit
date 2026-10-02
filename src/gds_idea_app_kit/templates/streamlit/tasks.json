@@ -4,8 +4,9 @@
   // "Run app" starts your app in a VS Code terminal with auto-reload. It runs
   // when the folder opens (VS Code asks once to allow automatic tasks).
   // If your code has an error, the traceback appears in that terminal; fix the
-  // code and re-run the task (Terminal > Run Task... > Run app). The dev
-  // container itself keeps running either way.
+  // code and re-run the task: Cmd+Shift+B (macOS) / Ctrl+Shift+B, or
+  // Terminal > Run Task... > Run app. The dev container itself keeps running
+  // either way.
   "version": "2.0.0",
   "tasks": [
     {
