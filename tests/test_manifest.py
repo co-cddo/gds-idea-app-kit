@@ -156,9 +156,35 @@ def test_tracked_files_infra_count():
 
 
 def test_tracked_files_web_count():
-    """Web projects track 10 files (5 common + 4 web + 1 framework)."""
+    """Web projects track 14 files (5 common + 7 web + 2 per-framework)."""
     tracked = get_tracked_files("streamlit")
-    assert len(tracked) == 10
+    assert len(tracked) == 14
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_tracked_files_include_dev_container_additions(framework):
+    tracked = get_tracked_files(framework)
+    assert tracked[f"{framework}/tasks.json"] == "app_src/.vscode/tasks.json"
+    assert tracked["web_common/Dockerfile.dockerignore"] == "app_src/Dockerfile.dockerignore"
+    assert tracked["web_common/devcontainer-README.md"] == ".devcontainer/README.md"
+    assert tracked["web_common/aws-dev-README.md"] == ".aws-dev/README.md"
+
+
+@pytest.mark.parametrize("framework", ["infra", "static", "python"])
+def test_tracked_files_non_web_exclude_dev_container_additions(framework):
+    destinations = set(get_tracked_files(framework).values())
+    assert "app_src/.vscode/tasks.json" not in destinations
+    assert "app_src/Dockerfile.dockerignore" not in destinations
+    assert ".aws-dev/README.md" not in destinations
+
+
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
+def test_tracked_file_templates_exist(framework):
+    from gds_idea_app_kit.init import _get_templates_dir
+
+    templates = _get_templates_dir()
+    for source in get_tracked_files(framework):
+        assert (templates / source).is_file(), source
 
 
 # ---- read_manifest ----

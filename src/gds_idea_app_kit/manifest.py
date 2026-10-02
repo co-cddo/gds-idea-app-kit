@@ -29,6 +29,9 @@ TOOL_OWNED_FILES = {
 WEB_OWNED_FILES = {
     "web_common/devcontainer.json": ".devcontainer/devcontainer.json",
     "web_common/docker-compose.yml": ".devcontainer/docker-compose.yml",
+    "web_common/devcontainer-README.md": ".devcontainer/README.md",
+    "web_common/aws-dev-README.md": ".aws-dev/README.md",
+    "web_common/Dockerfile.dockerignore": "app_src/Dockerfile.dockerignore",
     "dev_mocks/dev_mock_authoriser.json": "dev_mocks/dev_mock_authoriser.json",
     "dev_mocks/dev_mock_user.json": "dev_mocks/dev_mock_user.json",
 }
@@ -37,6 +40,7 @@ WEB_OWNED_FILES = {
 # The framework name is substituted at runtime.
 FRAMEWORK_OWNED_FILES = {
     "Dockerfile": "app_src/Dockerfile",
+    "tasks.json": "app_src/.vscode/tasks.json",
 }
 
 # Files that `update` manages for Python package projects.

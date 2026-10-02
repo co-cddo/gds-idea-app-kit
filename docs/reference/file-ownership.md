@@ -14,9 +14,13 @@
 | `.github/dependabot.yml` | Dependency update configuration |
 | `.devcontainer/devcontainer.json` | Dev container configuration |
 | `.devcontainer/docker-compose.yml` | Dev container compose file |
+| `.devcontainer/README.md` | Dev container guide |
+| `.aws-dev/README.md` | Explains the AWS credentials directory |
 | `dev_mocks/dev_mock_authoriser.json` | Mock auth data for local dev |
 | `dev_mocks/dev_mock_user.json` | Mock user data for local dev |
-| `app_src/Dockerfile` | Production Docker image |
+| `app_src/Dockerfile` | Docker image (development and production targets) |
+| `app_src/Dockerfile.dockerignore` | Keeps tests, credentials and local environments out of the image |
+| `app_src/.vscode/tasks.json` | "Run app" task that starts the app in the dev container with auto-reload |
 | `LICENCE` | MIT licence |
 
 ### User-owned (never touched by idea-app)
@@ -27,7 +31,7 @@
 | `cdk.json` | CDK configuration |
 | `pyproject.toml` | Root project dependencies (except manifest section) |
 | `app_src/{framework}_app.py` | Your application code |
-| `app_src/pyproject.toml` | App dependencies |
+| `app_src/pyproject.toml` | App dependencies (including the `zscaler` and `dev` groups) |
 | `tests/` | Your test files |
 | `README.md` | Your documentation |
 

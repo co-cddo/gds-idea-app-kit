@@ -19,7 +19,13 @@ _Brief description of your application._
    idea-app provide-role
    ```
 
-3. Run the application locally:
+3. The dev container serves the app at <http://localhost:8080> with
+   auto-reload. For Streamlit, Dash and FastAPI apps it is started by the
+   "Run app" VS Code task (allow automatic tasks if VS Code asks). If your code
+   has an error, the traceback appears in that terminal and the container keeps
+   running. See `.devcontainer/README.md` for details.
+
+4. Check the production image builds and passes its health check:
 
    ```bash
    idea-app smoke-test

@@ -9,6 +9,7 @@ dependencies = [
 
 [tool.uv.sources]
 cognito-auth = { index = "gds-idea" }
+gds-idea-pkg-zscaler-fix = { index = "gds-idea" }
 
 [[tool.uv.index]]
 name = "gds-idea"
@@ -40,3 +41,15 @@ testpaths = ["tests"]
 dev = [
     "pytest>=9.0.0",
 ]
+# Zscaler TLS fix for Python. Development only: it relaxes a certificate check,
+# so it must never reach production. The Dockerfile's production build uses
+# `uv sync --no-default-groups`, which leaves out every default group.
+# https://github.com/co-cddo/gds-idea-pkg-zscaler-fix
+zscaler = [
+    "gds-idea-pkg-zscaler-fix>=0.1.2",
+]
+
+[tool.uv]
+# A plain `uv sync` installs these groups (and keeps them, rather than removing
+# packages that aren't in the lockfile).
+default-groups = ["dev", "zscaler"]

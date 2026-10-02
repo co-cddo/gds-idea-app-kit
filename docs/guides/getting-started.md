@@ -65,6 +65,8 @@ gh repo create co-cddo/gds-idea-app-my-dashboard --private --source . --push
 
 Open the project in VS Code. When prompted, reopen in the dev container.
 
+The app starts automatically in a terminal called "Run app", with auto-reload, and is served at <http://localhost:8080>. VS Code asks once whether to allow automatic tasks; choose **Allow**.
+
 Provide AWS credentials:
 
 ```bash
@@ -77,6 +79,12 @@ Test the production image:
 idea-app smoke-test --wait
 # Visit http://localhost:8080
 ```
+
+### When your code has an error
+
+The app runs from a VS Code task, not as the container's main process. If your code has an error, the traceback appears in the "Run app" terminal and the dev container keeps running. Fix the code and run the task again (**Terminal > Run Task... > Run app**). You do not need to rebuild the container.
+
+See `.devcontainer/README.md` in your project for the full dev container guide.
 
 ## Create a Python package
 
