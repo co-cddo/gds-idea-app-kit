@@ -233,6 +233,18 @@ docker compose down -v   # -v removes the anonymous volume
 docker compose up --build
 ```
 
+## Agent skill
+
+[`skills/idea-app-usage/SKILL.md`](skills/idea-app-usage/SKILL.md) teaches AI coding agents such as
+OpenCode when and how to use `idea-app`. Developers receive it through
+[`idea-oc`](https://github.com/co-cddo/gds-idea-pkg-oc) (`idea-oc sync`), which installs the team's
+approved skills.
+
+The skill describes this tool, so change it in the same pull request as any change to a command, flag,
+project type or managed file. `tests/test_skill.py` fails if the skill mentions a command or flag that
+no longer exists, accepts or omits a project type that `init` handles differently, lists the wrong
+managed files for a project type, or leaves a command out.
+
 ## Development
 
 ```bash
