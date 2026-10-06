@@ -177,9 +177,9 @@ def test_get_templates_dir_has_codeowners_template():
 @pytest.mark.parametrize(
     "framework, extra",
     [
-        ("streamlit", "cognito-auth[streamlit]>=0.3.0"),
-        ("dash", "cognito-auth[dash]>=0.3.0"),
-        ("fastapi", "cognito-auth[fastapi]>=0.3.0"),
+        ("streamlit", "cognito-auth[streamlit]>=0.5.4"),
+        ("dash", "cognito-auth[dash]>=0.5.4"),
+        ("fastapi", "cognito-auth[fastapi]>=0.5.4"),
     ],
 )
 def test_pyproject_template_uses_versioned_cognito_auth(framework, extra):

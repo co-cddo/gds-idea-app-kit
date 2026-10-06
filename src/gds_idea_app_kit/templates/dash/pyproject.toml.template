@@ -4,7 +4,7 @@ version = "0.0.0"  # Version managed in root pyproject.toml
 description = "Dash app with Cognito authentication"
 requires-python = ">={{python_version}}"
 dependencies = [
-    "cognito-auth[dash]>=0.3.0",
+    "cognito-auth[dash]>=0.5.4",
     "gunicorn>=25.1.0",
 ]
 
