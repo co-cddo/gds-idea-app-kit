@@ -39,20 +39,23 @@ RUN apt-get update \
 # Switch to non-root user for dependency installation
 USER $USERNAME
 
-# Install dependencies (as non-root user)
-RUN uv sync
+# Install production dependencies only. Default dependency groups (dev tools, the
+# Zscaler fix) are excluded here so they can never reach the production image;
+# the development stage adds them back below.
+RUN uv sync --no-default-groups
 
 # Copy application code
 COPY --chown=$USERNAME:$USERNAME app_src/ .
 
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8080"]
-
 # ============================================================================
 # Development stage - for dev containers (NOT DEFAULT)
 # ============================================================================
 FROM base AS development
+
+# ARG values do not carry over from the base stage, so re-declare it here.
+ARG USERNAME=appuser
 
 # Switch back to root to install dev-only packages
 USER root
@@ -66,18 +69,22 @@ RUN apt-get update \
 
 USER $USERNAME
 
-# Zscaler TLS fix - development stage only, never production.
-# The corporate Zscaler proxy re-signs HTTPS with its own CA, which
-# Python doesn't trust by default (unlike curl/apt, which do). This
-# installs a fix that makes Python trust it. It works by relaxing one
-# certificate validation check, so it must never ship in production
-# images - hence it's only ever installed here, in the development
-# stage, which the production stage below does not build from.
-# https://github.com/co-cddo/gds-idea-pkg-zscaler-fix
-RUN uv pip install "gds-idea-pkg-zscaler-fix>=0.1.2" \
-      --index https://co-cddo.github.io/gds-idea-pypi/simple/
+# Install the development dependency groups (pytest, and the Zscaler TLS fix).
+# These are default groups in app_src/pyproject.toml, so a plain `uv sync`
+# keeps them. The base stage (and therefore production) excludes them.
+RUN uv sync
+
+# The dev container does not run this command: devcontainer.json sets
+# overrideCommand so a crashing app can't stop the container, and the app is
+# started by the "Run app" VS Code task instead. This CMD applies when the
+# development target is run directly (e.g. `docker compose up`), with reload on.
+CMD ["uv", "run", "uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
 
 # ============================================================================
 # Production stage - secure, minimal, non-root (DEFAULT)
 # ============================================================================
 FROM base AS production
+
+# --no-sync: run exactly what was installed at build time, never re-resolve or
+# install packages when the container starts.
+CMD ["uv", "run", "--no-sync", "uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8080"]

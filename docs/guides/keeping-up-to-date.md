@@ -26,6 +26,38 @@ git add -A && git commit -m "Update idea-app managed files"
 
 See [File ownership](../reference/file-ownership.md) for the complete list.
 
+## Upgrading to 0.7.0: dev container changes
+
+Version 0.7.0 changes how the dev container runs your app, so a bug in your code no longer takes the container down. It also moves the Zscaler TLS fix into your `pyproject.toml` files, and keeps development tools out of production images.
+
+**What changed**
+
+- The dev container no longer runs your app as its main process (`"overrideCommand": true`). The app starts from a VS Code task called "Run app", with auto-reload. If it crashes, the traceback is in that terminal and the container keeps running.
+- Production images are built with `uv sync --no-default-groups`, so they no longer contain pytest or the Zscaler fix. The production start command uses `uv run --no-sync`, so it never installs packages at start-up.
+- `app_src/Dockerfile.dockerignore` keeps `app_src/tests`, `.aws-dev` and local environments out of the image.
+- New managed files: `app_src/.vscode/tasks.json`, `app_src/Dockerfile.dockerignore`, `.devcontainer/README.md` and `.aws-dev/README.md`.
+- New projects ignore `cdk.context.json` in `.gitignore`.
+
+**What you need to do**
+
+1. Run `idea-app update` and review any `.new` files.
+2. Add the Zscaler fix as a default dependency group. The Dockerfile used to install it with `uv pip install`, and a plain `uv sync` removed it again. `idea-app update` prints these commands if your project needs them. Run them in `app_src/` and in the repository root:
+
+    ```bash
+    uv add --group zscaler "gds-idea-pkg-zscaler-fix>=0.1.2" \
+      --index gds-idea=https://co-cddo.github.io/gds-idea-pypi/simple/
+    ```
+
+    Then add this to `pyproject.toml` in the same directory:
+
+    ```toml
+    [tool.uv]
+    default-groups = ["dev", "zscaler"]
+    ```
+
+3. Rebuild the dev container (`Dev Containers: Rebuild Container`), and choose **Allow** when VS Code asks about automatic tasks.
+4. Optional: if your project committed `cdk.context.json` and you would rather not, add `cdk.context.json` to `.gitignore` and run `git rm --cached cdk.context.json`. Note that CDK uses this file to make lookups repeatable, so without it CI repeats the lookups on every synth.
+
 ## Migrating `app.py` tags to `IdeaTags`
 
 `app.py` is yours, so `idea-app update` does not change it. Projects created before `IdeaTags` was added still have the inline tagging code in `app.py`, and you need to switch them over by hand.

@@ -1,13 +1,15 @@
 """Tests for init module helper functions."""
 
 import ast
+import json
 import re
+import tomllib
 from unittest.mock import MagicMock, patch
 
 import click
 import pytest
 
-from gds_idea_app_kit import REPO_PREFIX
+from gds_idea_app_kit import PKG_REPO_PREFIX, REPO_PREFIX
 from gds_idea_app_kit.init import (
     _apply_template_vars,
     _copy_template,
@@ -213,7 +215,7 @@ def test_pyproject_template_has_gds_idea_index(framework):
 
 
 def test_run_init_cdk_install_is_split_into_two_calls(tmp_path, monkeypatch):
-    """run_init calls uv add three times — PyPI packages, internal package, and dev deps."""
+    """run_init calls uv add four times — PyPI packages, internal package, dev deps, zscaler."""
     monkeypatch.chdir(tmp_path)
 
     uv_add_calls = []
@@ -234,7 +236,7 @@ def test_run_init_cdk_install_is_split_into_two_calls(tmp_path, monkeypatch):
     ):
         run_init("streamlit", "test-app", "3.13")
 
-    assert len(uv_add_calls) == 3
+    assert len(uv_add_calls) == 4
 
 
 def test_run_init_first_uv_add_is_pypi_packages(tmp_path, monkeypatch):
@@ -1006,3 +1008,236 @@ def test_run_init_installs_constructs_with_idea_tags_floor(
         run_init(framework, app_name, "3.13")
 
     assert any("gds-idea-cdk-constructs>=0.7.0" in cmd for cmd in uv_add_calls)
+
+
+# ---- dev container resilience, production image hygiene, Zscaler group ----
+
+WEB_FRAMEWORK_NAMES = ["streamlit", "dash", "fastapi"]
+
+
+def _read_template(*parts):
+    return _get_templates_dir().joinpath(*parts).read_text()
+
+
+def _load_jsonc(text):
+    """Parse JSON with // comment lines (as used by devcontainer.json and tasks.json)."""
+    return json.loads(re.sub(r"^\s*//.*$", "", text, flags=re.MULTILINE))
+
+
+def _dockerfile_stages(framework):
+    """Split a framework Dockerfile into {stage_name: text}."""
+    text = _read_template(framework, "Dockerfile")
+    stages = {}
+    for chunk in re.split(r"(?m)^(?=FROM )", text):
+        match = re.match(r"FROM .* AS (\w+)", chunk)
+        if match:
+            stages[match.group(1)] = chunk
+    return stages
+
+
+def _scaffold(tmp_path, monkeypatch, framework, app_name="test-app"):
+    monkeypatch.chdir(tmp_path)
+    repo_name = f"{REPO_PREFIX}-{app_name}"
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return _fake_run_command_for(repo_name)(cmd, cwd, project_dir)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init(framework, app_name, "3.13")
+    return tmp_path / repo_name, uv_add_calls
+
+
+def test_devcontainer_overrides_command_so_app_crash_cannot_stop_container():
+    config = _load_jsonc(_read_template("web_common", "devcontainer.json"))
+    assert config["overrideCommand"] is True
+
+
+def test_devcontainer_post_create_is_plain_uv_sync():
+    config = _load_jsonc(_read_template("web_common", "devcontainer.json"))
+    assert config["postCreateCommand"] == "uv sync"
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_tasks_json_runs_app_on_folder_open(framework):
+    config = _load_jsonc(_read_template(framework, "tasks.json"))
+    task = config["tasks"][0]
+    assert task["label"] == "Run app"
+    assert task["isBackground"] is True
+    assert task["runOptions"]["runOn"] == "folderOpen"
+    assert "8080" in task["command"]
+
+
+@pytest.mark.parametrize(
+    ("framework", "expected"),
+    [
+        ("streamlit", "--server.runOnSave true"),
+        ("dash", "--reload"),
+        ("fastapi", "--reload"),
+    ],
+)
+def test_tasks_json_enables_reload(framework, expected):
+    task = _load_jsonc(_read_template(framework, "tasks.json"))["tasks"][0]
+    assert expected in task["command"]
+
+
+def test_tasks_json_dash_does_not_preload():
+    """gunicorn --preload and --reload don't work together."""
+    task = _load_jsonc(_read_template("dash", "tasks.json"))["tasks"][0]
+    assert "--preload" not in task["command"]
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_dockerfile_base_stage_excludes_default_groups(framework):
+    base = _dockerfile_stages(framework)["base"]
+    assert "RUN uv sync --no-default-groups" in base
+    assert not re.search(r"RUN uv sync\s*$", base, flags=re.MULTILINE)
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_dockerfile_base_stage_has_no_cmd(framework):
+    """Each stage that runs must define its own CMD; nothing is inherited."""
+    assert "CMD" not in _dockerfile_stages(framework)["base"]
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_dockerfile_development_stage_redeclares_username(framework):
+    dev = _dockerfile_stages(framework)["development"]
+    assert dev.index("ARG USERNAME") < dev.index("USER root")
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_dockerfile_development_stage_syncs_default_groups(framework):
+    dev = _dockerfile_stages(framework)["development"]
+    assert re.search(r"RUN uv sync\s*$", dev, flags=re.MULTILINE)
+    assert "uv pip install" not in dev
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_dockerfile_production_stage_never_syncs_at_startup(framework):
+    prod = _dockerfile_stages(framework)["production"]
+    assert '"--no-sync"' in prod
+    assert "zscaler" not in prod.lower().replace("# ", "")
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_dockerfile_development_cmd_differs_from_production(framework):
+    stages = _dockerfile_stages(framework)
+    dev_cmd = stages["development"][stages["development"].index("CMD") :]
+    prod_cmd = stages["production"][stages["production"].index("CMD") :]
+    assert dev_cmd != prod_cmd
+    assert '"--no-sync"' not in dev_cmd
+
+
+@pytest.mark.parametrize(
+    ("framework", "flag"),
+    [("streamlit", "--server.runOnSave"), ("dash", "--reload"), ("fastapi", "--reload")],
+)
+def test_dockerfile_development_cmd_reloads(framework, flag):
+    dev = _dockerfile_stages(framework)["development"]
+    assert flag in dev[dev.index("CMD") :]
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_dockerfile_production_cmd_does_not_reload(framework):
+    prod = _dockerfile_stages(framework)["production"]
+    cmd = prod[prod.index("CMD") :]
+    assert '"--reload"' not in cmd
+    assert "runOnSave" not in cmd
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_app_pyproject_template_has_zscaler_default_group(framework):
+    config = tomllib.loads(
+        _apply_template_vars(
+            _read_template(framework, "pyproject.toml.template"),
+            {"app_name": "x", "python_version": "3.13", "python_version_nodot": "313"},
+        )
+    )
+    assert config["dependency-groups"]["zscaler"] == ["gds-idea-pkg-zscaler-fix>=0.1.2"]
+    assert config["dependency-groups"]["dev"] == ["pytest>=9.0.0"]
+    assert config["tool"]["uv"]["default-groups"] == ["dev", "zscaler"]
+    assert config["tool"]["uv"]["sources"]["gds-idea-pkg-zscaler-fix"] == {"index": "gds-idea"}
+
+
+def test_dockerignore_excludes_tests_credentials_and_envs():
+    lines = _read_template("web_common", "Dockerfile.dockerignore").splitlines()
+    for entry in ("app_src/tests", ".aws-dev", "**/.venv", "**/__pycache__", ".git"):
+        assert entry in lines
+
+
+@pytest.mark.parametrize("framework", WEB_FRAMEWORK_NAMES)
+def test_run_init_web_creates_dev_container_files(tmp_path, monkeypatch, framework):
+    project, _ = _scaffold(tmp_path, monkeypatch, framework)
+    assert (project / "app_src" / ".vscode" / "tasks.json").is_file()
+    assert (project / "app_src" / "Dockerfile.dockerignore").is_file()
+    assert (project / ".devcontainer" / "README.md").is_file()
+    assert (project / ".aws-dev" / "README.md").is_file()
+
+
+@pytest.mark.parametrize("framework", ["infra", "static"])
+def test_run_init_non_web_skips_dev_container_files(tmp_path, monkeypatch, framework):
+    project, _ = _scaffold(tmp_path, monkeypatch, framework, app_name="test-x")
+    assert not (project / "app_src").exists()
+    assert not (project / ".aws-dev").exists()
+    assert not (project / ".devcontainer" / "README.md").exists()
+
+
+def test_run_init_gitignore_ignores_cdk_context(tmp_path, monkeypatch):
+    project, _ = _scaffold(tmp_path, monkeypatch, "streamlit")
+    # The fake uv init doesn't create .gitignore; run_init appends to (and creates) it.
+    assert "cdk.context.json" in (project / ".gitignore").read_text().splitlines()
+
+
+def test_aws_dev_readme_documents_mount_path_and_default_duration():
+    text = _read_template("web_common", "aws-dev-README.md")
+    assert "/home/appuser/.aws" in text
+    assert "1 hour" in text
+    assert "8 hours" not in text
+
+
+def test_project_readme_does_not_tell_users_to_smoke_test_to_run_locally():
+    text = _read_template("common", "README.md.template")
+    assert "Run the application locally" not in text
+
+
+@pytest.mark.parametrize(
+    ("framework", "app_name"),
+    [("streamlit", "test-app"), ("infra", "test-infra"), ("static", "test-site")],
+)
+def test_run_init_adds_zscaler_group_to_root_project(tmp_path, monkeypatch, framework, app_name):
+    project, uv_add_calls = _scaffold(tmp_path, monkeypatch, framework, app_name)
+
+    zscaler_calls = [c for c in uv_add_calls if "zscaler" in c]
+    assert len(zscaler_calls) == 1
+    call = zscaler_calls[0]
+    assert "gds-idea-pkg-zscaler-fix>=0.1.2" in call
+    assert call[call.index("--group") + 1] == "zscaler"
+    assert f"gds-idea={GDS_IDEA_INDEX_URL}" in call
+
+    config = tomllib.loads((project / "pyproject.toml").read_text())
+    assert config["tool"]["uv"]["default-groups"] == ["dev", "zscaler"]
+
+
+def test_run_init_python_package_has_no_zscaler_group(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    repo_name = f"{PKG_REPO_PREFIX}-test-pkg"
+    uv_add_calls = []
+
+    def fake_run_command(cmd, cwd, project_dir=None):
+        if cmd[:2] == ["uv", "add"]:
+            uv_add_calls.append(cmd)
+        return _make_fake_run_command_python(repo_name)(cmd, cwd, project_dir)
+
+    with (
+        patch("gds_idea_app_kit.init.check_prerequisites"),
+        patch("gds_idea_app_kit.init._run_command", side_effect=fake_run_command),
+    ):
+        run_init("python", "test-pkg", "3.13", no_publish=True)
+
+    assert not any("zscaler" in " ".join(c) for c in uv_add_calls)

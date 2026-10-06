@@ -1,0 +1,33 @@
+{
+  // Managed by idea-app (run `idea-app update` to refresh).
+  //
+  // "Run app" starts your app in a VS Code terminal with auto-reload. It runs
+  // when the folder opens (VS Code asks once to allow automatic tasks).
+  // If your code has an error, the traceback appears in that terminal; fix the
+  // code and re-run the task: Cmd+Shift+B (macOS) / Ctrl+Shift+B, or
+  // Terminal > Run Task... > Run app. The dev container itself keeps running
+  // either way.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run app",
+      "type": "shell",
+      "command": "uv run gunicorn dash_app:server -b 0.0.0.0:8080 --workers 1 --reload --timeout 120 --no-control-socket",
+      "isBackground": true,
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": false
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    }
+  ]
+}

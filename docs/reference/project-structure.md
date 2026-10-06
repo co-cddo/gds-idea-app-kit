@@ -11,13 +11,19 @@ gds-idea-app-{name}/
 ├── pyproject.toml                  # Root: CDK deps + manifest
 ├── app_src/
 │   ├── Dockerfile                  # Multi-stage: development + production
-│   ├── pyproject.toml              # App dependencies
+│   ├── Dockerfile.dockerignore     # Keeps tests and credentials out of the image
+│   ├── pyproject.toml              # App dependencies (+ dev and zscaler groups)
 │   ├── {framework}_app.py          # Your application code
+│   ├── .vscode/
+│   │   └── tasks.json              # "Run app" task (auto-reload in the dev container)
 │   └── tests/
 │       └── test_app.py             # App-level tests
 ├── .devcontainer/
+│   ├── README.md                   # Dev container guide
 │   ├── devcontainer.json           # VS Code dev container config
 │   └── docker-compose.yml          # Dev container services
+├── .aws-dev/
+│   └── README.md                   # Credentials written here by provide-role
 ├── dev_mocks/
 │   ├── dev_mock_authoriser.json    # Mock Cognito authoriser
 │   └── dev_mock_user.json          # Mock authenticated user

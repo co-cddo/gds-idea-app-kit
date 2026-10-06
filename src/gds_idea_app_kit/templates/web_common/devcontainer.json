@@ -3,6 +3,11 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/app",
+  // Keep the container alive independently of the app. VS Code starts its own
+  // idle process instead of the image's CMD, so a crash in your code can't take
+  // the container down. The app is started by the "Run app" task
+  // (app_src/.vscode/tasks.json), which shows errors in a terminal.
+  "overrideCommand": true,
   // ========================================================================
   // VS CODE CONFIGURATION - CUSTOMIZE AS NEEDED
   // ========================================================================
