@@ -440,7 +440,16 @@ def _run_adopt_python(project_dir: Path, no_publish: bool) -> None:
     # -- Install dev dependencies --
     click.echo("Installing dev dependencies...")
     _run_command(
-        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0", "pre-commit"],
+        [
+            "uv",
+            "add",
+            "--group",
+            "dev",
+            "pytest>=9.0.0",
+            "pytest-cov>=6.0",
+            "ruff>=0.14.0",
+            "pre-commit",
+        ],
         cwd=project_dir,
     )
 

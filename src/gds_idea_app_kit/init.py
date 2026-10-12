@@ -504,7 +504,7 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
     # -- Install dev dependencies --
     click.echo("Installing dev dependencies...")
     _run_command(
-        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0"],
+        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "pytest-cov>=6.0", "ruff>=0.14.0"],
         cwd=project_dir,
         project_dir=project_dir,
     )
@@ -735,7 +735,7 @@ def _run_init_static(app_name: str, python_version: str) -> None:
     # -- Install dev dependencies --
     click.echo("Installing dev dependencies...")
     _run_command(
-        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0"],
+        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "pytest-cov>=6.0", "ruff>=0.14.0"],
         cwd=project_dir,
         project_dir=project_dir,
     )
@@ -988,7 +988,16 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
     # -- Install dev dependencies --
     click.echo("Installing dev dependencies...")
     _run_command(
-        ["uv", "add", "--group", "dev", "pytest>=9.0.0", "ruff>=0.14.0", "pre-commit"],
+        [
+            "uv",
+            "add",
+            "--group",
+            "dev",
+            "pytest>=9.0.0",
+            "pytest-cov>=6.0",
+            "ruff>=0.14.0",
+            "pre-commit",
+        ],
         cwd=project_dir,
         project_dir=project_dir,
     )
