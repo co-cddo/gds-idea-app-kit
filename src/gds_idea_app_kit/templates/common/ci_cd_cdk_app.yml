@@ -24,4 +24,8 @@ jobs:
   cd:
     needs: [ci_build, ci_lint, ci_tests]
     uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/cd_workflow_cdk.yml@main
+    permissions:
+      id-token: write
+      contents: read
+      actions: write
     secrets: inherit
