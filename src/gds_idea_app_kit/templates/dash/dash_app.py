@@ -3,7 +3,7 @@ import logging
 
 from cognito_auth.dash import DashAuth
 from dash import Dash, Input, Output, dcc, html
-from flask import jsonify, request
+from flask import Flask, jsonify, request
 
 # Configure logging - quiet noisy libraries
 logging.basicConfig(
@@ -20,14 +20,22 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)  # Flask logger
 # Your app logger
 logger = logging.getLogger(__name__)
 
-app = Dash(__name__)
+# Register /health on the Flask server BEFORE creating Dash. Flask runs
+# before_request hooks in registration order, and Dash() adds its own setup hook
+# that builds the layout. If the layout needs the logged-in user, that hook fails
+# on the load balancer's health check (which has no login headers), so /health
+# must answer first.
+server = Flask(__name__)
 
 
 # create the health check endpoint for the ALB
-@app.server.before_request
+@server.before_request
 def maybe_handle_health():
     if request.path == "/health":
         return jsonify({"status": "ok"}), 200
+
+
+app = Dash(__name__, server=server)
 
 
 auth = DashAuth()
@@ -60,9 +68,6 @@ def display_user_info(n):
         ]
     )
 
-
-# Expose server for gunicorn (production)
-server = app.server
 
 if __name__ == "__main__":
     # Development mode: run Flask dev server with auto-reload
