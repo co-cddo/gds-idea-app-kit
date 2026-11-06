@@ -119,7 +119,7 @@ git checkout -b feat/my-feature
 
 ## CI/CD workflows
 
-The scaffolded project has two workflows:
+The scaffolded project has three workflows:
 
 ### `ci.yml` (on pull requests to main)
 
@@ -128,6 +128,10 @@ Calls reusable workflows from the shared catalogue:
 - **Lint** — ruff check + format verification
 - **Test** — pytest across Python 3.11, 3.12, 3.13, 3.14
 - **Build** — `uv build` to verify the package builds
+
+### `ci_ai_review.yml` (on the `ai-review` label)
+
+Runs the AI review when a PR with any base branch gets the `ai-review` label.
 
 ### `release.yml` (on push to main)
 
@@ -157,6 +161,7 @@ gds-idea-pkg-{name}/
 │   ├── dependabot.yml
 │   └── workflows/
 │       ├── ci.yml
+│       ├── ci_ai_review.yml
 │       └── release.yml
 ├── .gitignore
 ├── .pre-commit-config.yaml

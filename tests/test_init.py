@@ -551,6 +551,7 @@ def test_run_init_infra_creates_ci_cd_files(tmp_path, monkeypatch):
     project_dir = tmp_path / "gds-idea-app-test-infra"
     assert (project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml").exists()
     assert (project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml").exists()
+    assert (project_dir / ".github" / "workflows" / "ci_ai_review.yml").exists()
     assert (project_dir / ".github" / "CODEOWNERS").exists()
     assert (project_dir / ".github" / "dependabot.yml").exists()
 
@@ -730,6 +731,7 @@ def test_run_init_python_has_ci_workflows(tmp_path, monkeypatch):
 
     project_dir = tmp_path / "gds-idea-pkg-my-lib"
     assert (project_dir / ".github" / "workflows" / "ci.yml").exists()
+    assert (project_dir / ".github" / "workflows" / "ci_ai_review.yml").exists()
     assert (project_dir / ".github" / "workflows" / "release.yml").exists()
     assert (project_dir / ".github" / "CODEOWNERS").exists()
     assert (project_dir / ".github" / "dependabot.yml").exists()
@@ -1051,6 +1053,16 @@ def _scaffold(tmp_path, monkeypatch, framework, app_name="test-app"):
     ):
         run_init(framework, app_name, "3.13")
     return tmp_path / repo_name, uv_add_calls
+
+
+@pytest.mark.parametrize(
+    ("framework", "app_name"),
+    [("streamlit", "test-app"), ("infra", "test-infra"), ("static", "test-site")],
+)
+def test_run_init_writes_ai_review_workflow(tmp_path, monkeypatch, framework, app_name):
+    """Every CDK-style project type gets the separate AI review workflow."""
+    project, _ = _scaffold(tmp_path, monkeypatch, framework, app_name=app_name)
+    assert (project / ".github" / "workflows" / "ci_ai_review.yml").is_file()
 
 
 def test_devcontainer_overrides_command_so_app_crash_cannot_stop_container():

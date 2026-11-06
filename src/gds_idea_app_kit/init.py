@@ -424,6 +424,10 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
         templates / "common" / "ci_pr_cdk_app.yml",
         project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml",
     )
+    _copy_template(
+        templates / "common" / "ci_ai_review.yml",
+        project_dir / ".github" / "workflows" / "ci_ai_review.yml",
+    )
 
     # -- Copy CODEOWNERS --
     _copy_template(
@@ -683,6 +687,10 @@ def _run_init_static(app_name: str, python_version: str) -> None:
         project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml",
     )
     _copy_template(
+        templates / "common" / "ci_ai_review.yml",
+        project_dir / ".github" / "workflows" / "ci_ai_review.yml",
+    )
+    _copy_template(
         templates / "common" / "CODEOWNERS.template",
         project_dir / ".github" / "CODEOWNERS",
     )
@@ -926,6 +934,10 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
     _copy_template(
         templates / "python" / "ci.yml",
         project_dir / ".github" / "workflows" / "ci.yml",
+    )
+    _copy_template(
+        templates / "common" / "ci_ai_review.yml",
+        project_dir / ".github" / "workflows" / "ci_ai_review.yml",
     )
     if no_publish:
         _copy_template(

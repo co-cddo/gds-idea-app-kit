@@ -451,6 +451,66 @@ def test_update_missing_file_is_created(update_project, capsys):
     assert dockerfile.exists()
 
 
+def test_update_creates_ai_review_workflow(update_project, capsys):
+    """An existing project without the AI review workflow gets it on update."""
+    ai_review = update_project / ".github" / "workflows" / "ci_ai_review.yml"
+    ai_review.unlink()
+
+    os.chdir(update_project)
+    run_update(dry_run=False)
+
+    assert "Created: .github/workflows/ci_ai_review.yml" in capsys.readouterr().out
+    assert ai_review.exists()
+
+
+def _write_orchestrator_with_ai_review_job(project_dir, *, edited):
+    """Write an old orchestrator that still has the ai-review job, and refresh the manifest.
+
+    Args:
+        project_dir: Root of the project under test.
+        edited: Whether to add a local edit after the manifest records the file's hash.
+
+    Returns:
+        Path to the orchestrator file.
+    """
+    orchestrator = project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml"
+    old_job = (
+        "\n  ai-review:\n    if: github.event.label.name == 'ai-review'\n"
+        "    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_ai_review.yml@main\n"
+    )
+    orchestrator.write_text(orchestrator.read_text() + old_job)
+    manifest = read_manifest(project_dir)
+    manifest["files"][".github/workflows/ci_pr_cdk_app.yml"] = hash_file(orchestrator)
+    write_manifest(project_dir, manifest)
+    if edited:
+        orchestrator.write_text(orchestrator.read_text() + "# local edit\n")
+    return orchestrator
+
+
+def test_update_removes_ai_review_job_from_orchestrator(update_project):
+    """An unmodified orchestrator loses its old ai-review job on update."""
+    orchestrator = _write_orchestrator_with_ai_review_job(update_project, edited=False)
+
+    os.chdir(update_project)
+    run_update(dry_run=False)
+
+    assert "ci_ai_review" not in orchestrator.read_text()
+
+
+def test_update_edited_orchestrator_keeps_job_and_gets_review_file(update_project, capsys):
+    """An edited orchestrator gets a .new file, and the AI review workflow is still created."""
+    orchestrator = _write_orchestrator_with_ai_review_job(update_project, edited=True)
+    ai_review = update_project / ".github" / "workflows" / "ci_ai_review.yml"
+    ai_review.unlink()
+
+    os.chdir(update_project)
+    run_update(dry_run=False)
+
+    assert "ci_ai_review" in orchestrator.read_text()
+    assert orchestrator.with_name("ci_pr_cdk_app.yml.new").exists()
+    assert ai_review.exists()
+
+
 def test_update_dry_run_makes_no_changes(update_project, capsys):
     """Dry run reports what would change but doesn't modify files or write .new files."""
     # Delete a file and modify another
