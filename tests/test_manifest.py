@@ -1,9 +1,11 @@
 """Tests for manifest module."""
 
 import hashlib
+import re
 
 import pytest
 
+from gds_idea_app_kit.init import _get_templates_dir
 from gds_idea_app_kit.manifest import (
     build_manifest,
     get_tracked_files,
@@ -102,6 +104,28 @@ def test_tracked_files_include_common_destinations(framework):
     assert "app_src/Dockerfile" in destinations
 
 
+@pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi", "static", "infra", "python"])
+def test_tracked_files_include_ai_review_workflow(framework):
+    """Every project type tracks the separate AI review workflow."""
+    tracked = get_tracked_files(framework)
+    assert tracked["common/ci_ai_review.yml"] == ".github/workflows/ci_ai_review.yml"
+
+
+@pytest.mark.parametrize("template", ["common/ci_pr_cdk_app.yml", "python/ci.yml"])
+def test_orchestrators_have_no_ai_review_job(template):
+    """The AI review runs from its own workflow, so orchestrators do not repeat it."""
+    content = (_get_templates_dir() / template).read_text()
+    assert "ci_ai_review" not in content
+    assert re.search(r"^\s*ai-review:", content, re.MULTILINE) is None
+
+
+def test_ai_review_workflow_has_no_branch_filter():
+    """The AI review workflow starts for a PR into any branch, so stacked PRs work."""
+    content = (_get_templates_dir() / "common" / "ci_ai_review.yml").read_text()
+    assert re.search(r"^\s*branches\s*:", content, re.MULTILINE) is None
+    assert "github.event.label.name == 'ai-review'" in content
+
+
 @pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
 def test_tracked_files_web_sources_use_web_common(framework):
     """Web-only files are sourced from web_common/ directory."""
@@ -150,15 +174,15 @@ def test_tracked_files_infra_has_common_only():
 
 
 def test_tracked_files_infra_count():
-    """Infra projects track exactly 5 common files."""
+    """Infra projects track exactly 6 common files."""
     tracked = get_tracked_files("infra")
-    assert len(tracked) == 5
+    assert len(tracked) == 6
 
 
 def test_tracked_files_web_count():
-    """Web projects track 14 files (5 common + 7 web + 2 per-framework)."""
+    """Web projects track 15 files (6 common + 7 web + 2 per-framework)."""
     tracked = get_tracked_files("streamlit")
-    assert len(tracked) == 14
+    assert len(tracked) == 15
 
 
 @pytest.mark.parametrize("framework", ["streamlit", "dash", "fastapi"])
@@ -295,6 +319,7 @@ def test_build_manifest_infra_tracks_common_files_only(project_dir):
     (project_dir / ".github" / "workflows").mkdir(parents=True)
     (project_dir / ".github" / "workflows" / "ci_cd_cdk_app.yml").write_text("name: CI/CD")
     (project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml").write_text("name: CI PR")
+    (project_dir / ".github" / "workflows" / "ci_ai_review.yml").write_text("name: AI Review")
     (project_dir / ".github" / "CODEOWNERS").write_text("* @gds-idea-senior-ds")
     (project_dir / ".github" / "dependabot.yml").write_text("version: 2")
     (project_dir / "LICENCE").write_text("MIT")
@@ -305,7 +330,7 @@ def test_build_manifest_infra_tracks_common_files_only(project_dir):
         tool_version="0.1.0",
         project_dir=project_dir,
     )
-    assert len(result["files"]) == 5
+    assert len(result["files"]) == 6
     assert "app_src/Dockerfile" not in result["files"]
     assert ".devcontainer/devcontainer.json" not in result["files"]
 

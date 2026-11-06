@@ -53,6 +53,7 @@ gds-idea-pkg-my-library/
 │   ├── dependabot.yml
 │   └── workflows/
 │       ├── ci.yml          # lint, test, build
+│       ├── ci_ai_review.yml # AI review on label
 │       └── release.yml     # auto tag + publish
 ├── .gitignore
 ├── LICENCE

@@ -24,6 +24,10 @@ Triggered on PRs to `dev` or `prod`. Runs checks without deploying:
 5. **Test** — pytest
 6. **CDK diff** — posts infrastructure diff as a PR comment
 
+### `ci_ai_review.yml` (AI review)
+
+Triggered when a PR gets the `ai-review` label. It has no branch filter, so it also reviews stacked PRs whose base is another feature branch. It runs only the AI review. The other workflows skip that label event.
+
 ## Python package workflows
 
 ### `ci.yml` (pull requests to main)
@@ -35,6 +39,10 @@ Calls three reusable workflows:
 | `ci_pkg_lint.yml` | `uv sync --all-extras` then `ruff check` + `ruff format --check` |
 | `ci_pkg_test.yml` | Matrix test across Python 3.11, 3.12, 3.13, 3.14 with `pytest -m "not integration"` |
 | `ci_pkg_build.yml` | `uv build` with full git history (for hatch-vcs) |
+
+### `ci_ai_review.yml` (AI review)
+
+The same workflow as for web app and infrastructure projects. It runs when a PR with any base branch gets the `ai-review` label.
 
 ### `release.yml` (push to main)
 
@@ -76,6 +84,7 @@ All reusable workflows live in [`co-cddo/gds-idea-workflows-catalogue`](https://
 | `ci_pyproject_version.yml` | Version bump check |
 | `ci_cdk_diff.yml` | CDK diff on PRs |
 | `cd_workflow_cdk.yml` | CDK deploy |
+| `ci_ai_review.yml` | AI review of a labelled PR |
 
 ### Python package workflows
 
@@ -84,5 +93,6 @@ All reusable workflows live in [`co-cddo/gds-idea-workflows-catalogue`](https://
 | `ci_pkg_lint.yml` | Lint with ruff |
 | `ci_pkg_test.yml` | Test across Python matrix |
 | `ci_pkg_build.yml` | Build wheel/sdist |
+| `ci_ai_review.yml` | AI review of a labelled PR |
 | `auto_tag_release.yml` | Label-based semver tagging |
 | `gds_idea_pypi_publish.yml` | Build, upload, trigger index rebuild |

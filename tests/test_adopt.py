@@ -110,6 +110,7 @@ def test_adopt_creates_ci_cd_files(cdk_project):
 
     assert (cdk_project / ".github" / "workflows" / "ci_cd_cdk_app.yml").exists()
     assert (cdk_project / ".github" / "workflows" / "ci_pr_cdk_app.yml").exists()
+    assert (cdk_project / ".github" / "workflows" / "ci_ai_review.yml").exists()
     assert (cdk_project / ".github" / "CODEOWNERS").exists()
     assert (cdk_project / ".github" / "dependabot.yml").exists()
 
@@ -309,6 +310,7 @@ def test_adopt_python_creates_workflows(python_project):
         run_adopt()
 
     assert (python_project / ".github" / "workflows" / "ci.yml").exists()
+    assert (python_project / ".github" / "workflows" / "ci_ai_review.yml").exists()
     assert (python_project / ".github" / "workflows" / "release.yml").exists()
     assert (python_project / ".github" / "CODEOWNERS").exists()
     assert (python_project / ".github" / "dependabot.yml").exists()

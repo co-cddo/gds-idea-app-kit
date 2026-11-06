@@ -99,6 +99,10 @@ def _run_adopt_cdk(project_dir: Path) -> None:
         templates / "common" / "ci_pr_cdk_app.yml",
         project_dir / ".github" / "workflows" / "ci_pr_cdk_app.yml",
     )
+    _copy_template(
+        templates / "common" / "ci_ai_review.yml",
+        project_dir / ".github" / "workflows" / "ci_ai_review.yml",
+    )
 
     # CODEOWNERS
     _copy_template(
@@ -360,6 +364,10 @@ def _run_adopt_python(project_dir: Path, no_publish: bool) -> None:
     _copy_template(
         templates / "python" / "ci.yml",
         project_dir / ".github" / "workflows" / "ci.yml",
+    )
+    _copy_template(
+        templates / "common" / "ci_ai_review.yml",
+        project_dir / ".github" / "workflows" / "ci_ai_review.yml",
     )
 
     # Release workflow (with or without publish)

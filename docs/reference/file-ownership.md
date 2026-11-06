@@ -10,6 +10,7 @@
 |---|---|
 | `.github/workflows/ci_cd_cdk_app.yml` | CI/CD orchestrator |
 | `.github/workflows/ci_pr_cdk_app.yml` | PR checks orchestrator |
+| `.github/workflows/ci_ai_review.yml` | AI review, runs when a PR gets the `ai-review` label |
 | `.github/CODEOWNERS` | Code review requirements |
 | `.github/dependabot.yml` | Dependency update configuration |
 | `.devcontainer/devcontainer.json` | Dev container configuration |
@@ -43,6 +44,7 @@
 |---|---|
 | `.github/workflows/ci_cd_cdk_app.yml` | CI/CD orchestrator |
 | `.github/workflows/ci_pr_cdk_app.yml` | PR checks orchestrator |
+| `.github/workflows/ci_ai_review.yml` | AI review, runs when a PR gets the `ai-review` label |
 | `.github/CODEOWNERS` | Code review requirements |
 | `.github/dependabot.yml` | Dependency update configuration |
 | `.devcontainer/devcontainer.json` | Dev container configuration |
@@ -73,6 +75,7 @@
 |---|---|
 | `.github/workflows/ci_cd_cdk_app.yml` | CI/CD orchestrator |
 | `.github/workflows/ci_pr_cdk_app.yml` | PR checks orchestrator |
+| `.github/workflows/ci_ai_review.yml` | AI review, runs when a PR gets the `ai-review` label |
 | `.github/CODEOWNERS` | Code review requirements |
 | `.github/dependabot.yml` | Dependency update configuration |
 | `LICENCE` | MIT licence |
@@ -93,6 +96,7 @@
 | File | Purpose |
 |---|---|
 | `.github/workflows/ci.yml` | CI orchestrator (lint, test, build) |
+| `.github/workflows/ci_ai_review.yml` | AI review, runs when a PR gets the `ai-review` label |
 | `.github/workflows/release.yml` | Release + publish orchestrator |
 | `.github/CODEOWNERS` | Code review requirements |
 | `.github/dependabot.yml` | Dependency update configuration |

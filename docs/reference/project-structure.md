@@ -33,6 +33,7 @@ gds-idea-app-{name}/
 │   ├── CODEOWNERS
 │   ├── dependabot.yml
 │   └── workflows/
+│       ├── ci_ai_review.yml        # AI review on the ai-review label
 │       ├── ci_cd_cdk_app.yml       # Deploy on push to dev/prod
 │       └── ci_pr_cdk_app.yml       # PR checks
 ├── .gitignore
@@ -67,6 +68,7 @@ gds-idea-app-{name}/
 │   ├── CODEOWNERS
 │   ├── dependabot.yml
 │   └── workflows/
+│       ├── ci_ai_review.yml        # AI review on the ai-review label
 │       ├── ci_cd_cdk_app.yml       # Deploy on push to dev/prod
 │       └── ci_pr_cdk_app.yml       # PR checks
 ├── .gitignore
@@ -88,6 +90,7 @@ gds-idea-app-{name}/
 │   ├── CODEOWNERS
 │   ├── dependabot.yml
 │   └── workflows/
+│       ├── ci_ai_review.yml
 │       ├── ci_cd_cdk_app.yml
 │       └── ci_pr_cdk_app.yml
 ├── .gitignore
@@ -113,6 +116,7 @@ gds-idea-pkg-{name}/
 │   ├── dependabot.yml
 │   └── workflows/
 │       ├── ci.yml                  # Lint + test + build
+│       ├── ci_ai_review.yml        # AI review on the ai-review label
 │       └── release.yml             # Tag + release + publish on merge
 ├── .gitignore
 ├── LICENCE

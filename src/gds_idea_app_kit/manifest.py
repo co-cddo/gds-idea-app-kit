@@ -18,6 +18,7 @@ MANIFEST_KEY = "gds-idea-app-kit"
 # Files that `update` manages for ALL project types.
 # The dict maps template source path -> destination path in the project.
 TOOL_OWNED_FILES = {
+    "common/ci_ai_review.yml": ".github/workflows/ci_ai_review.yml",
     "common/ci_cd_cdk_app.yml": ".github/workflows/ci_cd_cdk_app.yml",
     "common/ci_pr_cdk_app.yml": ".github/workflows/ci_pr_cdk_app.yml",
     "common/CODEOWNERS.template": ".github/CODEOWNERS",
@@ -45,6 +46,7 @@ FRAMEWORK_OWNED_FILES = {
 
 # Files that `update` manages for Python package projects.
 PYTHON_OWNED_FILES = {
+    "common/ci_ai_review.yml": ".github/workflows/ci_ai_review.yml",
     "python/ci.yml": ".github/workflows/ci.yml",
     "python/release.yml": ".github/workflows/release.yml",
     "python/CODEOWNERS.template": ".github/CODEOWNERS",
@@ -55,6 +57,7 @@ PYTHON_OWNED_FILES = {
 
 # Files that `update` manages for static site projects.
 STATIC_OWNED_FILES = {
+    "common/ci_ai_review.yml": ".github/workflows/ci_ai_review.yml",
     "common/ci_cd_cdk_app.yml": ".github/workflows/ci_cd_cdk_app.yml",
     "common/ci_pr_cdk_app.yml": ".github/workflows/ci_pr_cdk_app.yml",
     "common/CODEOWNERS.template": ".github/CODEOWNERS",

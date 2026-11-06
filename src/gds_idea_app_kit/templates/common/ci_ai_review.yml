@@ -1,0 +1,16 @@
+name: AI Review
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    if: github.event.label.name == 'ai-review'
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_ai_review.yml@main
+    secrets: inherit
