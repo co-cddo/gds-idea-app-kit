@@ -16,6 +16,7 @@ import click
 import tomlkit
 
 from gds_idea_app_kit import (
+    GITHUB_ORG,
     PKG_REPO_PREFIX,
     REPO_PREFIX,
     __version__,
@@ -84,6 +85,7 @@ def _run_adopt_cdk(project_dir: Path) -> None:
     template_vars = {
         "app_name": app_name,
         "year": str(datetime.now().year),
+        "org": GITHUB_ORG,
     }
     templates = _get_templates_dir()
 
@@ -104,6 +106,7 @@ def _run_adopt_cdk(project_dir: Path) -> None:
     _copy_template(
         templates / "common" / "CODEOWNERS.template",
         project_dir / ".github" / "CODEOWNERS",
+        variables=template_vars,
     )
 
     # Dependabot
@@ -350,6 +353,7 @@ def _run_adopt_python(project_dir: Path, no_publish: bool) -> None:
     template_vars = {
         "app_name": app_name,
         "year": str(datetime.now().year),
+        "org": GITHUB_ORG,
     }
     templates = _get_templates_dir()
 
@@ -378,6 +382,7 @@ def _run_adopt_python(project_dir: Path, no_publish: bool) -> None:
     _copy_template(
         templates / "python" / "CODEOWNERS.template",
         project_dir / ".github" / "CODEOWNERS",
+        variables=template_vars,
     )
 
     # Dependabot

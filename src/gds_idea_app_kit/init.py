@@ -344,6 +344,7 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
         "python_version_nodot": python_version_nodot,
         "year": str(datetime.now().year),
         "repository": repo_name,
+        "org": GITHUB_ORG,
     }
     templates = _get_templates_dir()
 
@@ -429,6 +430,7 @@ def run_init(framework: str, app_name: str, python_version: str, no_publish: boo
     _copy_template(
         templates / "common" / "CODEOWNERS.template",
         project_dir / ".github" / "CODEOWNERS",
+        variables=template_vars,
     )
 
     # -- Copy Dependabot config --
@@ -606,6 +608,7 @@ def _run_init_static(app_name: str, python_version: str) -> None:
         "python_version_nodot": python_version.replace(".", ""),
         "year": str(datetime.now().year),
         "repository": repo_name,
+        "org": GITHUB_ORG,
     }
     templates = _get_templates_dir()
 
@@ -685,6 +688,7 @@ def _run_init_static(app_name: str, python_version: str) -> None:
     _copy_template(
         templates / "common" / "CODEOWNERS.template",
         project_dir / ".github" / "CODEOWNERS",
+        variables=template_vars,
     )
     _copy_template(
         templates / "common" / "dependabot.yml",
@@ -908,6 +912,7 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
         "app_name": app_name,
         "python_version": python_version,
         "year": str(datetime.now().year),
+        "org": GITHUB_ORG,
     }
 
     init_py = project_dir / "src" / package_name / "__init__.py"
@@ -942,6 +947,7 @@ def _run_init_python(app_name: str, python_version: str, no_publish: bool) -> No
     _copy_template(
         templates / "python" / "CODEOWNERS.template",
         project_dir / ".github" / "CODEOWNERS",
+        variables=template_vars,
     )
 
     # -- Copy Dependabot config --
